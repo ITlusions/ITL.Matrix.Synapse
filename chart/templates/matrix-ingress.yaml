@@ -15,7 +15,7 @@ spec:
         {{- range .hosts }}
         - {{ . | quote }}
         {{- end }}
-      secretName: {{ .secretName }}
+      secretName: {{ .secretName }}s
     {{- end }}
   rules:
     {{- range .Values.tenant.ingress.matrix.hosts }}
@@ -26,7 +26,7 @@ spec:
           pathType: {{ .pathType | default "Prefix" }}
           backend:
             service:
-              name: {{ $.Values.tenant.name }}-matrix
+                names
               namespace: {{ $.Release.Namespace }}
               port:
                 number: 8008
