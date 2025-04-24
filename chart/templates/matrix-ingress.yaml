@@ -26,7 +26,7 @@ spec:
           pathType: {{ .pathType | default "Prefix" }}
           backend:
             service:
-                names
+              name: {{ $.Values.tenant.ingress.matrix.serviceName | default (printf "%s-matrix" $.Values.tenant.name) }}
               port:
                 number: 8008
     {{- end }}
