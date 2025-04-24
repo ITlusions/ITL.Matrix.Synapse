@@ -4,4 +4,9 @@ metadata:
   name: {{ .Values.tenant.name }}-matrix
 spec:
   configMap:
-    name: {{ .Values.tenant.name }}-matrix-cm
+    name: {{ .Values.tenant.name }}-matrix
+  createNewPostgreSQL: {{ .Values.tenant.createNewPostgreSQL | default false }}
+  homeserver:
+    values: 
+      reportStats: {{ .Values.tenant.homeserver.values.reportStats | default false }}
+      serverName: {{ .Values.tenant.homeserver.values.serverName | default "default.server.com" }}
