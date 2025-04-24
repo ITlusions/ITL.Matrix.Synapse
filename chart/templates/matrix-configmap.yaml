@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.tenant.name }}-matrix-config
+  namespace: default
+data:
+  matrix-config.yaml: |
+    server_name: "matrix.dev.itlusions.com"
+    pid_file: /homeserver.pid
+    listeners:
+      - port: 8008
+        tls: false
+        type: http
+        x_forwarded: true
+
+        resources:
+          - names: [client, federation]
+            compress: false
+
+    database:
+      name: sqlite3
+      args:
+        database: /data/homeserver.db
+
+    log_config: "/data/matrix.dev.itlusions.com.log.config"
+
+    media_store_path: "/data/media_store"
+
+    caches:
+
+    # Enable or disable open registration
+    enable_registration: true
+
+    signing_key_path: "data/matrix.dev.itlusions.com.signing.key"
+
+    trusted_key_servers:
+      - server_name: "matrix.org"
+    report_stats: no
