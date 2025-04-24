@@ -3,7 +3,7 @@ tenants:
     createNewPostgreSQL: false
     homeserver:
       values:
-        reportStats: true
+        reportStats: false
         serverName: matrix.dev.itlusions.com
     ingress:
       matrix:
@@ -26,7 +26,7 @@ tenants:
             pathType: Prefix
 
   - name: itl-synapse02
-    createNewPostgreSQL: true
+    createNewPostgreSQL: false
     homeserver:
       values:
         reportStats: false
