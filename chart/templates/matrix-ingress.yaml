@@ -1,5 +1,7 @@
 {{- range .Values.tenants }}
 {{- if .ingress.matrix.enabled }}
+{{- $service := (lookup "v1" "Service" .Release.Namespace (printf "%s" .name)) }}
+{{- if $service }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -33,9 +35,10 @@ spec:
             pathType: {{ .pathType | default "Prefix" }}
             backend:
               service:
-                name: {{ $.name }}
+                name: {{ .name }}
                 port:
-                  number: 8008
+                  number: 80
     {{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
