@@ -17,10 +17,5 @@ spec:
       {{- else }}
       serverName: "default.server.com"
       {{- end }}
-      {{- if .homeserver.values.enableRegistration }}
-      enableRegistration: {{ .homeserver.values.enableRegistration | default false }}
-      {{- else }}
-      enableRegistration: false
-      {{- end }}
 {{- end }}
 
