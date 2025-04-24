@@ -26,8 +26,7 @@ spec:
           pathType: {{ .pathType | default "Prefix" }}
           backend:
             service:
-              name: {{ $.Values.tenant.name }}
-              namespace: {{ $.Release.Namespace }}
+              name: {{ $.Values.tenant.servicename }}
               port:
                 number: 8008
     {{- end }}
