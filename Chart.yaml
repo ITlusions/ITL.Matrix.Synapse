@@ -1,0 +1,19 @@
+apiVersion: v2
+appVersion: v1.0.0
+description: A Helm chart for deploying and managing Synapse Matrix tenants
+home: https://matrix.org
+icon: https://matrix.org/images/matrix-logo.svg
+keywords:
+- matrix
+- synapse
+- chat
+- messaging
+- collaboration
+maintainers:
+- email: info@itlusions.com
+  name: ITlusions
+name: synapse-tenant
+sources:
+- https://github.com/matrix-org/synapse
+type: application
+version: 1.0.0

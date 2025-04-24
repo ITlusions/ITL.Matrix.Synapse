@@ -1,0 +1,65 @@
+{{- range .Values.tenants }}
+apiVersion: synapse.opdev.io/v1alpha1
+kind: Synapse
+metadata:
+  name: {{ .name }}-matrix
+spec:
+  createNewPostgreSQL: {{ .createNewPostgreSQL | default false }}
+  homeserver:
+    values:
+      {{- if dig . "homeserver" "values" "reportStats" }}
+      reportStats: {{ dig . "homeserver" "values" "reportStats" }}
+      {{- else }}
+      reportStats: false
+      {{- end }}
+      {{- if dig . "homeserver" "values" "serverName" }}
+      serverName: {{ dig . "homeserver" "values" "serverName" }}
+      {{- else }}
+      serverName: "default.server.com"
+      {{- end }}
+      {{- if dig . "homeserver" "values" "enableRegistration" }}
+      enableRegistration: {{ dig . "homeserver" "values" "enableRegistration" }}
+      {{- else }}
+      enableRegistration: false
+      {{- end }}
+      {{- if dig . "homeserver" "values" "enablePresence" }}
+      enablePresence: {{ dig . "homeserver" "values" "enablePresence" }}
+      {{- else }}
+      enablePresence: true
+      {{- end }}
+      {{- if dig . "homeserver" "values" "enablePushNotifications" }}
+      enablePushNotifications: {{ dig . "homeserver" "values" "enablePushNotifications" }}
+      {{- else }}
+      enablePushNotifications: false
+      {{- end }}
+      {{- if dig . "homeserver" "values" "enableEmailNotifications" }}
+      enableEmailNotifications: {{ dig . "homeserver" "values" "enableEmailNotifications" }}
+      {{- else }}
+      enableEmailNotifications: false
+      {{- end }}
+      {{- if dig . "homeserver" "values" "enableMessageRetention" }}
+      enableMessageRetention: {{ dig . "homeserver" "values" "enableMessageRetention" }}
+      {{- else }}
+      enableMessageRetention: true
+      {{- end }}
+      {{- if dig . "homeserver" "values" "enableEncryption" }}
+      enableEncryption: {{ dig . "homeserver" "values" "enableEncryption" }}
+      {{- else }}
+      enableEncryption: true
+      {{- end }}
+      {{- if dig . "homeserver" "values" "enableFileSharing" }}
+      enableFileSharing: {{ dig . "homeserver" "values" "enableFileSharing" }}
+      {{- else }}
+      enableFileSharing: false
+      {{- end }}
+      {{- if dig . "homeserver" "values" "enableVoiceVideoCalls" }}
+      enableVoiceVideoCalls: {{ dig . "homeserver" "values" "enableVoiceVideoCalls" }}
+      {{- else }}
+      enableVoiceVideoCalls: true
+      {{- end }}
+      {{- if dig . "homeserver" "values" "enableCustomEmojis" }}
+      enableCustomEmojis: {{ dig . "homeserver" "values" "enableCustomEmojis" }}
+      {{- else }}
+      enableCustomEmojis: false
+      {{- end }}
+{{- end }}
