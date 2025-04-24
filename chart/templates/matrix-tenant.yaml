@@ -7,3 +7,4 @@ spec:
   homeserver:
     configMap:
       name: {{ .Values.tenant.name }}-matrix
+      namespace: {{ .Release.Namespace }}
