@@ -1,6 +1,7 @@
 tenant:
     name: itl-synapse02
-    createNewPostgreSQL: false
+    servicename: itl-synapse02-matrix
+    createNewPostgreSQL: falses
     homeserver:
       values:
         reportStats: false
