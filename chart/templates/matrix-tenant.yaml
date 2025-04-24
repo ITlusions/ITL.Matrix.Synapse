@@ -8,25 +8,3 @@ spec:
     values:
       reportStats: {{ .Values.tenant.homeserver.values.reportStats | default false }}
       serverName: {{ .Values.tenant.homeserver.values.serverName | default "default.server.com" }}
-  ingress:
-    matrix:
-      enabled: {{ .Values.tenant.ingress.matrix.enabled | default false }}
-      ingressClassName: {{ .Values.tenant.ingress.matrix.ingressClassName | quote }}
-      annotations:
-        {{- range $key, $value := .Values.tenant.ingress.matrix.annotations }}
-        {{ $key }}: {{ $value | quote }}
-        {{- end }}
-      tls:
-        {{- range .Values.tenant.ingress.matrix.tls }}
-        - secretName: {{ .secretName }}
-          hosts:
-            {{- range .hosts }}
-            - {{ . }}
-            {{- end }}
-        {{- end }}
-      hosts:
-        {{- range .Values.tenant.ingress.matrix.hosts }}
-        - host: {{ .host }}
-          path: {{ .path }}
-          pathType: {{ .pathType }}
-        {{- end }}

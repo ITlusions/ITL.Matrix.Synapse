@@ -1,27 +1,28 @@
 tenant:
-    name: itl-synapse02
-    servicename: itl-synapse02-matrix
-    createNewPostgreSQL: false
-    homeserver:
-      values:
-        reportStats: false
-        serverName: matrix02.dev.itlusions.com
-    ingress:
-      matrix:
-        enabled: true
-        ingressClassName: "traefik"
-        annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
-          cert-manager.io/cluster-issuer: "letsencrypt-issuer"
-        tls:
-          - secretName: matrix02-itlusions-com-tls
-            hosts:
-              - matrix02.dev.itlusions.com
-              - matrix02.itlusions.com
+  name: itl-synapse02
+  servicename: itl-synapse02-matrix
+  createNewPostgreSQL: false
+  homeserver:
+    values:
+      reportStats: false
+      serverName: matrix02.dev.itlusions.com
+  ingress:
+    enabled: true
+    className: "traefik" # Updated to match the template's .Values.ingress.className
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
+      cert-manager.io/cluster-issuer: "letsencrypt-issuer"
+    tls:
+      - secretName: matrix02-itlusions-com-tls
         hosts:
-          - host: matrix02.dev.itlusions.com
-            path: /
+          - matrix02.dev.itlusions.com
+          - matrix02.itlusions.com
+    hosts:
+      - host: matrix02.dev.itlusions.com
+        paths:
+          - path: /
             pathType: Prefix
-          - host: matrix02.itlusions.com
-            path: /
+      - host: matrix02.itlusions.com
+        paths:
+          - path: /
             pathType: Prefix
