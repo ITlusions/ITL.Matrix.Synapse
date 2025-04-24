@@ -14,7 +14,7 @@ apiVersion: extensions/v1beta1
 {{- end }}
 kind: Ingress
 metadata:
-  name: {{ $fullName }}
+  name: {{ $fullName }}-ingress
   labels:
     {{- include "itl.matrix.synapse.labels" . | nindent 4 }}
   {{- with .Values.tenant.ingress.annotations }}

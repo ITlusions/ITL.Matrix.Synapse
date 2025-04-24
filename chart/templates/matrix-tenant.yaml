@@ -4,4 +4,4 @@ metadata:
   name: {{ .Values.tenant.name }}-matrix
 spec:
   configMap:
-    name: synapse-homeserver
+    name: {{ .Values.tenant.name }}-matrix-cm
