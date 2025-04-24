@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: "{{ .Values.tenant.name }}-matrix-config"
 data:
-  homeserver:
+  homeserver.yaml: |
     server_name: "matrix.dev.itlusions.com"
     pid_file: /homeserver.pid
     listeners:
