@@ -33,7 +33,7 @@ tenants:
         serverName: matrix02.dev.itlusions.com
     ingress:
       matrix:
-        enabled: false
+        enabled: true
         ingressClassName: "traefik"
         annotations:
           traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
