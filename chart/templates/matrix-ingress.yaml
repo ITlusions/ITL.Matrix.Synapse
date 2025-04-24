@@ -1,6 +1,5 @@
 {{- if .Values.tenant.ingress.enabled -}}
 {{- $fullName := include "itl.matrix.synapse.name" . -}}
-{{- $svcPort := .Values.service.port -}}
 {{- if and .Values.tenant.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.tenant.ingress.annotations "kubernetes.io/ingress.class") }}
   {{- $_ := set .Values.tenant.ingress.annotations "kubernetes.io/ingress.class" .Values.tenant.ingress.className}}
