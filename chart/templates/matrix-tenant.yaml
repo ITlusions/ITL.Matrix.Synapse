@@ -2,6 +2,7 @@ apiVersion: synapse.opdev.io/v1alpha1
 kind: Synapse
 metadata:
   name: {{ .Values.tenant.name }}-matrix
+  namespace: {{ .Release.Namespace }}
 spec:
   createNewPostgreSQL: {{ .Values.tenant.createNewPostgreSQL | default false }}
   homeserver:

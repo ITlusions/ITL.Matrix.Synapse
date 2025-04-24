@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: "{{ .Values.tenant.name }}-matrix"
+  name: {{ .Values.tenant.name }}-matrix
 data:
   homeserver.yaml: |
     # Configuration file for Synapse.
@@ -28,7 +28,7 @@ data:
     database:
       name: sqlite3
       args:
-      database: /data/homeserver.db
+        database: /data/homeserver.db
     log_config: "/data/matrix.itlusions.com.log.config"
     media_store_path: "/data/media_store"
     registration_shared_secret: "{{ .Values.RegistrationSharedSecret }}"
