@@ -5,7 +5,7 @@ tenant:
   homeserver:
     values:
       reportStats: false
-      serverName: matrix02.dev.itlusions.com
+      serverName: matrix.dev.itlusions.com
   ingress:
     enabled: true
     className: "traefik" # Updated to match the template's .Values.ingress.className
