@@ -1,5 +1,6 @@
 tenants:
-  - name: itl-synapse01
+  - tenant: itl-synapse01
+    name: itl-synapse01
     createNewPostgreSQL: false
     homeserver:
       values:
@@ -25,7 +26,8 @@ tenants:
             path: /
             pathType: Prefix
 
-  - name: itl-synapse02
+  - tenant: itl-synapse02
+    name: itl-synapse02
     createNewPostgreSQL: false
     homeserver:
       values:
