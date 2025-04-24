@@ -2,7 +2,7 @@
 Expand the name of the chart.
 */}}
 {{- define "itl.matrix.synapse.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- default .Chart.Name .Values.tenant.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
