@@ -22,12 +22,12 @@ spec:
     - host: {{ .host }}
       http:
         paths:
-        - path: {{ .path }}
-          pathType: {{ .pathType | default "Prefix" }}
-          backend:
-            service:
-              name: {{ $.Values.tenant.servicename }}
-              port:
-                number: 8008
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ .Values.tenant.servicename }}
+                port:
+                  number: 8008
     {{- end }}
 {{- end }}
