@@ -1,6 +1,6 @@
 {{- range .Values.tenants }}
 {{- if .ingress.matrix.enabled }}
-{{- $service := (lookup "v1" "Service" .Release.Namespace (printf "%s" .name)) }}
+{{- $service := (lookup "v1" "Service" .Release.Namespace (printf "%s-matrix" .name)) }}
 {{- if $service }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
