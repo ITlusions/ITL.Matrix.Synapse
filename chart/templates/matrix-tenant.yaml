@@ -22,4 +22,5 @@ spec:
       {{- else }}
       enableRegistration: false
       {{- end }}
+{{- end }}
 
