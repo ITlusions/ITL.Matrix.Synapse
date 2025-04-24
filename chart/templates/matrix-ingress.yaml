@@ -1,6 +1,5 @@
 {{- range .Values.tenants }}
 {{- if .ingress.matrix.enabled }}
-{{- if $service }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -15,7 +14,7 @@ spec:
   {{- with .ingress.matrix.ingressClassName }}
   ingressClassName: {{ . }}
   {{- end }}
-  {{- if .ingress.matrix.tls }}
+  {{- if and .ingress.matrix.tls (gt (len .ingress.matrix.tls) 0) }}
   tls:
     {{- range .ingress.matrix.tls }}
     - hosts:
@@ -38,6 +37,5 @@ spec:
                 port:
                   number: 8008
     {{- end }}
-{{- end }}
 {{- end }}
 {{- end }}
