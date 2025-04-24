@@ -1,4 +1,5 @@
 {{- if .Values.tenant.ingress.matrix.enabled }}
+{{- $servicename := .Values.tenant.servicename -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -26,7 +27,7 @@ spec:
             pathType: {{ .pathType | default "Prefix" }}
             backend:
               service:
-                name: {{ .Values.tenant.servicename }}
+                name: {{ $servicename }}
                 port:
                   number: 8008
     {{- end }}
