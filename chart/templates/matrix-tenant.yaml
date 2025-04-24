@@ -1,21 +1,32 @@
-{{- range .Values.tenants }}
 apiVersion: synapse.opdev.io/v1alpha1
 kind: Synapse
 metadata:
-  name: {{ .name }}-matrix
+  name: {{ .Values.tenant.name }}-matrix
 spec:
-  createNewPostgreSQL: {{ .createNewPostgreSQL | default false }}
+  createNewPostgreSQL: {{ .Values.tenant.createNewPostgreSQL | default false }}
   homeserver:
     values:
-      {{- if .homeserver.values.reportStats }}
-      reportStats: {{ .homeserver.values.reportStats | default false }}
-      {{- else }}
-      reportStats: false
-      {{- end }}
-      {{- if .homeserver.values.serverName }}
-      serverName: {{ .homeserver.values.serverName | default "default.server.com" }}
-      {{- else }}
-      serverName: "default.server.com"
-      {{- end }}
-{{- end }}
-
+      reportStats: {{ .Values.tenant.homeserver.values.reportStats | default false }}
+      serverName: {{ .Values.tenant.homeserver.values.serverName | default "default.server.com" }}
+  ingress:
+    matrix:
+      enabled: {{ .Values.tenant.ingress.matrix.enabled | default false }}
+      ingressClassName: {{ .Values.tenant.ingress.matrix.ingressClassName | quote }}
+      annotations:
+        {{- range $key, $value := .Values.tenant.ingress.matrix.annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      tls:
+        {{- range .Values.tenant.ingress.matrix.tls }}
+        - secretName: {{ .secretName }}
+          hosts:
+            {{- range .hosts }}
+            - {{ . }}
+            {{- end }}
+        {{- end }}
+      hosts:
+        {{- range .Values.tenant.ingress.matrix.hosts }}
+        - host: {{ .host }}
+          path: {{ .path }}
+          pathType: {{ .pathType }}
+        {{- end }}
