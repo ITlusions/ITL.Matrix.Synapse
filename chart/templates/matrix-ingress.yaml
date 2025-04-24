@@ -35,9 +35,9 @@ spec:
             pathType: {{ .pathType | default "Prefix" }}
             backend:
               service:
-                name: http
+                name: {{ .name }}-matrix
                 port:
-                  number: 80
+                  number: 8008
     {{- end }}
 {{- end }}
 {{- end }}
