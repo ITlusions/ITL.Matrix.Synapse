@@ -4,24 +4,37 @@ metadata:
   name: "{{ .Values.tenant.name }}-matrix"
 data:
   homeserver.yaml: |
-    server_name: "matrix.dev.itlusions.com"
+    # Configuration file for Synapse.
+    #
+    # This is a YAML file: see [1] for a quick introduction. Note in particular
+    # that *indentation is important*: all the elements of a list or dictionary
+    # should have the same indentation.
+    #
+    # [1] https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html
+    #
+    # For more information on how to configure Synapse, including a complete accounting of
+    # each option, go to docs/usage/configuration/config_documentation.md or
+    # https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html
+    server_name: "matrix.itlusions.com"
     pid_file: /homeserver.pid
     listeners:
       - port: 8008
-        tls: false
-        type: http
-        x_forwarded: true
-        resources:
-          - names: [client, federation]
-            compress: false
+      tls: false
+      type: http
+      x_forwarded: true
+      resources:
+        - names: [client, federation]
+        compress: false
     database:
       name: sqlite3
       args:
-        database: /data/homeserver.db
-    log_config: "/data/matrix.dev.itlusions.com.log.config"
+      database: /data/homeserver.db
+    log_config: "/data/matrix.itlusions.com.log.config"
     media_store_path: "/data/media_store"
-    # Enable or disable open registration
-    enable_registration: true
-    signing_key_path: "data/matrix.dev.itlusions.com.signing.key"
+    registration_shared_secret: "{{ .Values.RegistrationSharedSecret }}"
+    report_stats: no
+    macaroon_secret_key: "{{ .Values.MacaroonSecretKey }}"
+    form_secret: "{{ .Values.FormSecret }}"
+    signing_key_path: "data/matrix.itlusions.com.signing.key"
     trusted_key_servers:
       - server_name: "matrix.org"
