@@ -8,3 +8,5 @@ spec:
     values:
       configMap:
         name: {{ .Values.tenant.name }}-matrix-config
+      reportStats: {{ .Values.tenant.homeserver.values.reportStats | default false }}
+      serverName: {{ .Values.tenant.homeserver.values.serverName | default "default.server.com" }}
