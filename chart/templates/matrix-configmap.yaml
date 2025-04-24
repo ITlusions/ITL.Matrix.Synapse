@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Values.tenant.name }}-matrix-config
+  name: "{{ .Values.tenant.name }}-matrix-config"
 data:
   homeserver:
     server_name: "matrix.dev.itlusions.com"
