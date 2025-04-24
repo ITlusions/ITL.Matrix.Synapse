@@ -1,6 +1,6 @@
 tenant:
-  name: itl-synapse01
-  servicename: itl-synapse01-matrix
+  name: itl-syn01
+  servicename: itl-syn01-matrix
   createNewPostgreSQL: false
   homeserver:
     values:
