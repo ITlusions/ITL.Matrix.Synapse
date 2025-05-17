@@ -1,12 +1,11 @@
-{{- $fullName := include "itl.matrix.synapse.name" . -}}
 apiVersion: synapse.opdev.io/v1alpha1
 kind: Synapse
 metadata:
-  name: {{ $fullName }}-tenant
+  name: itl-syn01-tenant
 spec:
   createNewPostgreSQL: {{ .Values.tenant.createNewPostgreSQL | default false }}
   homeserver:
     configMap:
-      name: {{ $fullName }}-cm
+      name: itl-syn01-cm
       key: homeserver.yaml
       namespace: {{ .Release.Namespace }}
