@@ -1,10 +1,11 @@
 apiVersion: synapse.opdev.io/v1alpha1
 kind: Synapse
 metadata:
-  name: "{{ .Values.tenant.name }}-matrix" 
+  name: {{ $fullName }}-tenant
 spec:
   createNewPostgreSQL: {{ .Values.tenant.createNewPostgreSQL | default false }}
   homeserver:
     configMap:
-      name: "{{ .Values.tenant.name }}-matrix"
+      name: {{ $fullName }}-cm
+      key: homeserver.yaml
       namespace: {{ .Release.Namespace }}
