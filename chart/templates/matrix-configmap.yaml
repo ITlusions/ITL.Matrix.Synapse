@@ -1,3 +1,4 @@
+{{- $fullName := include "itl.matrix.synapse.name" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

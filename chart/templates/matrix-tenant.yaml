@@ -1,3 +1,4 @@
+{{- $fullName := include "itl.matrix.synapse.name" . -}}
 apiVersion: synapse.opdev.io/v1alpha1
 kind: Synapse
 metadata:
