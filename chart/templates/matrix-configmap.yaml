@@ -39,5 +39,5 @@ data:
     signing_key_path: "data/matrix.dev.itlusions.com.signing.key"
     report_stats: true
     verify_keys:
-        "ed25519:auto": "yourmatrixogsdfgsdfgsdfsfdsfgsdfrgkeyhere"
-        accept_keys_insecurely: true
+      "ed25519:auto": "yourmatrixogsdfgsdfgsdfsfdsfgsdfrgkeyhere"
+    accept_keys_insecurely: true
