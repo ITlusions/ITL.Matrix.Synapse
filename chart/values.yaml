@@ -1,7 +1,7 @@
 tenant:
   name: itl-syn01
   registrationSharedSecret:
-    name: itl-syn01-matrix-rss
+    name: itl-syn01-secret
     existingSecret: false
   servicename: itl-syn01-matrix
   createNewPostgreSQL: false
