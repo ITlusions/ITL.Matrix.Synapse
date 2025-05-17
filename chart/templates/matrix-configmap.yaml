@@ -1,9 +1,11 @@
 {{- $fullName := include "itl.matrix.synapse.name" . -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace (printf "%s-secret" $fullName) -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (printf "%s-secret" $fullName) | default (dict "data" (dict)) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ $fullName }}-cm
+  annotations:
+    "helm.sh/hook": "post-install,post-upgrade"
 data:
   homeserver.yaml: |
     server_name: "matrix.dev.itlusions.com"
