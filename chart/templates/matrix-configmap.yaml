@@ -5,18 +5,14 @@ metadata:
   name: {{ $fullName }}-cm
 data:
   homeserver.yaml: |
-    server_name: your.domain.com
-    public_baseurl: https://your.domain.com/
+    server_name: "matrix.dev.itlusions.com"
+    public_baseurl: https://matrix.dev.itlusions.com/
     enable_registration: false
-    registration_shared_secret: "YOUR_SECRET"
+    registration_shared_secret: {{ printf "%%s" (lookup "v1" "Secret" .Release.Namespace (printf "%s-secret" $fullName)).data.registrationSharedSecret | b64dec }}
     database:
-      name: psycopg2
+      name: sqlite3
       args:
-        user: synapse
-        password: synapsepassword
-        database: synapse
-        host: postgres
-        port: 5432
+        database: /data/homeserver.db
     listeners:
       - port: 8008
         type: http
@@ -29,14 +25,10 @@ data:
             handler: matrix
           - path: /_synapse/client
             handler: synapse_admin
-    # Optional but recommended for federation
     federation_domain_whitelist: null
     log_config: /data/log.config
     media_store_path: /data/media_store
-    signing_key_path: /data/signing.key
+    signing_key_path: "data/matrix.dev.itlusions.com.signing.key"
     report_stats: true
     trusted_key_servers:
       - server_name: "matrix.org"
-        verify_keys:
-          "ed25519:auto": "yourmatrixorgkeyhere"
-        accept_keys_insecurely: false
