@@ -38,5 +38,6 @@ data:
     media_store_path: /data/media_store
     signing_key_path: "data/matrix.dev.itlusions.com.signing.key"
     report_stats: true
-    trusted_key_servers:
-      - server_name: "matrix.org"
+    verify_keys:
+        "ed25519:auto": "yourmatrixorgkeyhere"
+        accept_keys_insecurely: true
