@@ -1,0 +1,10 @@
+apiVersion: synapse.opdev.io/v1alpha1
+kind: Synapse
+metadata:
+  name: itl-syn02-tenant
+spec:
+  homeserver:
+    values:
+      serverName: matrix02.dev.itlusions.com
+      reportStats: true
+  isOpenshift: false

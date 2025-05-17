@@ -4,8 +4,3 @@ metadata:
   name: itl-syn01-tenant
 spec:
   createNewPostgreSQL: {{ .Values.tenant.createNewPostgreSQL | default false }}
-  homeserver:
-    configMap:
-      name: itl-syn01-cm
-      key: homeserver.yaml
-      namespace: {{ .Release.Namespace }}
