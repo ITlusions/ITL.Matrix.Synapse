@@ -12,8 +12,8 @@ data:
     server_name: "matrix.dev.itlusions.com"
     public_baseurl: https://matrix.dev.itlusions.com/
     enable_registration: false
-    registration_shared_secret: {{- if and $secret.data.registrationSharedSecret (not (empty $secret.data.registrationSharedSecret)) -}}
-      {{ $secret.data.registrationSharedSecret | b64dec | quote }}
+    registration_shared_secret: {{- if and $secret.data.registration_shared_secret (not (empty $secret.data.registration_shared_secret)) -}}
+      {{ $secret.data.registration_shared_secret | b64dec | quote }}
     {{- else -}}
       "default-registration-secret"
     {{- end }}
@@ -39,5 +39,5 @@ data:
     signing_key_path: "data/matrix.dev.itlusions.com.signing.key"
     report_stats: true
     verify_keys:
-      "ed25519:auto": "yourmatrixogsdfgsdfgsdfsfdsfgsdfrgkeyhere"
-    accept_keys_insecurely: true
+        "ed25519:auto": "yourmatrixogsdfgsdfgsdfsfdsfgsdfrgkeyhere"
+        accept_keys_insecurely: true
