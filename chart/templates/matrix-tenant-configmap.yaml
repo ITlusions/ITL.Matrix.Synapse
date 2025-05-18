@@ -1,3 +1,4 @@
+{{- if not (lookup "synapse.opdev.io/v1alpha1" "Synapse" .Release.Namespace "itl-syn01-tenant") }}
 apiVersion: synapse.opdev.io/v1alpha1
 kind: Synapse
 metadata:
@@ -11,3 +12,4 @@ spec:
   registrationSharedSecret: "{{ randAlphaNum 32 }}"
   macaroonSecretKey: "{{ randAlphaNum 32 }}"
   formSecret: "{{ randAlphaNum 32 }}"
+{{- end }}
