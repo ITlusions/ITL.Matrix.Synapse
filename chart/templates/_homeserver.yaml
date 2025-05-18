@@ -1,0 +1,121 @@
+{{- define "homeserver.yaml" }}
+{{- if .Values.matrix.homeserverOverride }}
+{{- toYaml .Values.matrix.homeserverOverride }}
+{{- else }}
+
+#region Server Configuration
+## Server ##
+
+server_name: {{ .Values.matrix.serverName }}
+pid_file: /data/homeserver.pid
+public_baseurl: {{ include "matrix.baseUrl" . | quote }}
+use_presence: {{ .Values.matrix.presence }}
+allow_public_rooms_over_federation: {{ and .Values.matrix.federation.enabled .Values.matrix.federation.allowPublicRooms }}
+block_non_admin_invites: {{ .Values.matrix.blockNonAdminInvites }}
+enable_search: {{ .Values.matrix.search }}
+redaction_retention_period: {{ .Values.matrix.retentionPeriod }}
+admin_contact: 'mailto:{{ .Values.matrix.adminEmail }}'
+hs_disabled: {{ .Values.matrix.disabled }}
+hs_disabled_message: {{ .Values.matrix.disabledMessage }}
+#endregion
+
+#region Federation Configuration
+federation_domain_whitelist:
+{{- if .Values.matrix.federation.whitelist }}
+    {{- range .Values.matrix.federation.whitelist }}
+    - {{ . }}
+    {{- end }}
+{{- end }}
+
+federation_ip_range_blacklist:
+{{- range .Values.matrix.federation.blacklist }}
+    - {{ . }}
+{{- end }}
+#endregion
+
+#region Listener Configuration
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses: ['0.0.0.0']
+    resources:
+      - names: [client, federation]
+        compress: false
+
+{{- if .Values.synapse.metrics.enabled }}
+  - type: metrics
+    port: {{ .Values.synapse.metrics.port }}
+    bind_addresses: ['0.0.0.0']
+    resources:
+      - names: [metrics]
+{{- end }}
+#endregion
+
+#region Database Configuration
+database:
+    name: "psycopg2"
+    args:
+        user: "{{ .Values.postgresql.username }}"
+        password: "{{ .Values.postgresql.password }}"
+        database: "{{ .Values.postgresql.database }}"
+        {{- if .Values.postgresql.enabled }}
+        host: "{{ include "matrix.fullname" . }}-postgresql"
+        port: "5432"
+        {{- else }}
+        host: "{{ .Values.postgresql.hostname }}"
+        port: "{{ .Values.postgresql.port }}"
+        {{- end }}
+        sslmode: {{ .Values.postgresql.sslMode }}
+        cp_min: 5
+        cp_max: 10
+#endregion
+
+#region Media Store Configuration
+media_store_path: "/data/media_store"
+uploads_path: "/data/uploads"
+max_upload_size: {{ .Values.matrix.uploads.maxSize }}
+max_image_pixels: {{ .Values.matrix.uploads.maxPixels }}
+url_preview_enabled: {{ .Values.matrix.urlPreviews.enabled }}
+url_preview_ip_range_blacklist:
+{{- if .Values.matrix.urlPreviews.rules.ip.blacklist }}
+    {{- range .Values.matrix.urlPreviews.rules.ip.blacklist }}
+    - {{ . }}
+    {{- end }}
+{{- end }}
+#endregion
+
+#region Registration Configuration
+enable_registration: {{ .Values.matrix.registration.enabled }}
+allow_guest_access: {{ .Values.matrix.registration.allowGuests }}
+registration_shared_secret: {{ .Values.matrix.registration.sharedSecret }}
+registrations_require_3pid:
+{{- if .Values.matrix.registration.required3Pids }}
+    {{- range .Values.matrix.registration.required3Pids }}
+    - {{ . }}
+    {{- end }}
+{{- end }}
+#endregion
+
+#region Email Configuration
+email:
+  enable_notifs: {{ .Values.mail.enabled }}
+  notif_from: {{ .Values.mail.from }}
+  {{- if .Values.mail.relay.enabled }}
+  smtp_host: {{ include "matrix.fullname" . }}-exim-relay
+  smtp_port: {{ .Values.mail.relay.service.port }}
+  {{- else }}
+  smtp_host: {{ .Values.mail.external.host }}
+  smtp_port: {{ .Values.mail.external.port }}
+  smtp_user: {{ .Values.mail.external.username }}
+  smtp_pass: {{ .Values.mail.external.password }}
+  require_transport_security: {{ .Values.mail.external.requireTransportSecurity }}
+  {{- end }}
+#endregion
+
+{{ if .Values.matrix.homeserverExtra }}
+{{- toYaml .Values.matrix.homeserverExtra }}
+{{- end }}
+{{- end }}
+{{- end }}
