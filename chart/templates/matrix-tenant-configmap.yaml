@@ -8,6 +8,4 @@ spec:
     configMap:
       name: itl-syn01-cm
       namespace: {{ .Release.Namespace }}
-  isOpenShift: true
-  serviceAccount:
-    name: default
+  isOpenShift: false
