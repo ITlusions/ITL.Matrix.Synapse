@@ -2,9 +2,13 @@ apiVersion: synapse.opdev.io/v1alpha1
 kind: Synapse
 metadata:
   name: itl-syn01-tenant
+  annotations:
+    argocd.argoproj.io/sync-wave: 2" # ConfigMap is deployed first
 spec:
   homeserver:
     configMap:
       name: itl-syn01-cm
       namespace: {{ .Release.Namespace }}
-  isOpenShift: false
+  registrationSharedSecret: "{{ randAlphaNum 32 }}"
+  macaroonSecretKey: "{{ randAlphaNum 32 }}"
+  formSecret: "{{ randAlphaNum 32 }}"
