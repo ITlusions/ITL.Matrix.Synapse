@@ -14,6 +14,7 @@ data:
     server_name: "matrix.dev.itlusions.com"
     public_baseurl: "https://matrix.dev.itlusions.com/"
     enable_registration: false
+    registration_shared_secret: {{ $secretData.registrationSharedSecret | b64dec | quote }}
     database:
       name: sqlite3
       args:
