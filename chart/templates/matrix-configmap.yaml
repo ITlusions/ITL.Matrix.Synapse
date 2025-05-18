@@ -36,5 +36,6 @@ data:
     media_store_path: /data/media_store
     signing_key_path: "data/matrix.dev.itlusions.com.signing.key"
     report_stats: true
+    macook_secret_key: {{ (index (lookup "v1" "Secret" .Release.Namespace "itl-syn01-secret").data "macook_secret_key") | b64dec | quote }}
     trusted_key_servers:
       - server_name: "matrix.org"
