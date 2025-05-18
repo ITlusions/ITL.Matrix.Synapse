@@ -695,7 +695,7 @@ fullnameOverride: ""
 networkPolicies:
   enabled: true
 
-isOpenshift: false
+isOpenshift: true
 
 tenant:
   name: itl-syn01
