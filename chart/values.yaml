@@ -1,4 +1,8 @@
 name: itl-syn01-sa
+serviceAccount:
+  create: true
+  name: custom-sa-name
+
 # Runtime configuration for Synapse and settings related to the Matrix protocol
 matrix:
   # Manual overrides for homeserver.yaml, the main configuration file for Synapse
