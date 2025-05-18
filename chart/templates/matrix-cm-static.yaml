@@ -1,7 +1,7 @@
 {{- $fullName := include "itl.matrix.synapse.name" . -}}
 {{- $namespace := .Release.Namespace -}}
 {{- $secret := lookup "v1" "Secret" $namespace "itl-syn01-secret" | default (dict "data" (dict)) -}}
-{{- $secretData := $secret.data -}}
+{{- $secretData := $secret.data | default (dict) -}}
 
 apiVersion: v1
 kind: ConfigMap
@@ -14,7 +14,11 @@ data:
     server_name: "matrix.dev.itlusions.com"
     public_baseurl: "https://matrix.dev.itlusions.com/"
     enable_registration: false
-    registration_shared_secret: {{ $secretData.registrationSharedSecret | b64dec | quote }}
+    registration_shared_secret: {{- if and $secretData.registrationSharedSecret (not (empty $secretData.registrationSharedSecret)) -}}
+      {{ $secretData.registrationSharedSecret | b64dec | quote }}
+    {{- else -}}
+      "default-shared-secret"
+    {{- end }}
     database:
       name: sqlite3
       args:
