@@ -699,9 +699,7 @@ fullnameOverride: ""
 networkPolicies:
   enabled: true
 
-
-Spec:
-  isOpenshift: true
+isOpenshift: true
 
 
 tenant:
