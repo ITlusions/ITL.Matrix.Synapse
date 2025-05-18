@@ -1,3 +1,4 @@
+name: itl-syn01-sa
 # Runtime configuration for Synapse and settings related to the Matrix protocol
 matrix:
   # Manual overrides for homeserver.yaml, the main configuration file for Synapse
