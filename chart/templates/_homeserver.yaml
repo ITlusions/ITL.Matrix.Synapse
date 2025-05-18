@@ -89,7 +89,7 @@ url_preview_ip_range_blacklist:
 #region Registration Configuration
 enable_registration: {{ .Values.matrix.registration.enabled }}
 allow_guest_access: {{ .Values.matrix.registration.allowGuests }}
-registration_shared_secret: {{ .Values.matrix.registration.sharedSecret }}
+registration_shared_secret: {{ (lookup "v1" "Secret" .Release.Namespace "itl-syn01-secret-02").data.sharedSecret | b64dec }}
 registrations_require_3pid:
 {{- if .Values.matrix.registration.required3Pids }}
     {{- range .Values.matrix.registration.required3Pids }}
