@@ -7,7 +7,7 @@ metadata:
   name: {{ $fullName }}-cm
   annotations:
     "helm.sh/hook": "pre-install,pre-upgrade"
-    argocd.argoproj.io/sync-wave: "2" # ConfigMap is deployed after Secret
+    argocd.argoproj.io/sync-wave: "2" 
 data:
   homeserver.yaml: |
     server_name: "matrix.dev.itlusions.com"

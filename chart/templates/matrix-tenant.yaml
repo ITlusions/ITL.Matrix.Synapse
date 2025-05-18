@@ -3,7 +3,7 @@ kind: Synapse
 metadata:
   name: itl-syn01-tenant
   annotations:
-    argocd.argoproj.io/sync-wave: "2" # Synapse is deployed after ConfigMap
+    argocd.argoproj.io/sync-wave: "3" # Synapse is deployed after ConfigMap
 spec:
   homeserver:
     configMap:
