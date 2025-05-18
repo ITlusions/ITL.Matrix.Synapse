@@ -7,7 +7,7 @@ metadata:
   name: {{ $fullName }}-cm
   annotations:
     "helm.sh/hook": "pre-install,pre-upgrade"
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "1" # ConfigMap is deployed first
 data:
   homeserver.yaml: |
     server_name: "matrix.dev.itlusions.com"
@@ -34,7 +34,5 @@ data:
     media_store_path: /data/media_store
     signing_key_path: "data/matrix.dev.itlusions.com.signing.key"
     report_stats: true
-    macaroon_secret_key: {{ $secret.data.macaroon_secret_key | b64dec | quote }}
-    form_secret: {{ $secret.data.form_secret | b64dec | quote }}
     trusted_key_servers:
       - server_name: "matrix.org"
