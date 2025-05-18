@@ -9,7 +9,4 @@ spec:
     configMap:
       name: itl-syn01-cm
       namespace: {{ .Release.Namespace }}
-  registrationSharedSecret: "{{ randAlphaNum 32 }}"
-  macaroonSecretKey: "{{ randAlphaNum 32 }}"
-  formSecret: "{{ randAlphaNum 32 }}"
 {{- end }}
