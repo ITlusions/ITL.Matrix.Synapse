@@ -2,7 +2,6 @@
 {{- if .Values.matrix.homeserverOverride }}
 {{- toYaml .Values.matrix.homeserverOverride }}
 {{- else }}
-
 #region Server Configuration
 ## Server ##
 
