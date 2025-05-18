@@ -1,7 +1,7 @@
 {{- $fullName := include "itl.matrix.synapse.name" . -}}
 {{- $namespace := .Release.Namespace -}}
 {{- $secret := lookup "v1" "Secret" $namespace "itl-syn01-secret" | default (dict "data" (dict)) -}}
-{{- $secretData := $secret | default (dict) -}}
+{{- $secretData := $secret.data | default (dict) -}}
 
 apiVersion: v1
 kind: ConfigMap
