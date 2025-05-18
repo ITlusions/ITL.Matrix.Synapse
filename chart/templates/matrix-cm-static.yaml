@@ -13,6 +13,7 @@ data:
     server_name: "matrix.dev.itlusions.com"
     public_baseurl: "https://matrix.dev.itlusions.com/"
     enable_registration: false
+    macaroon_secret_key: "change-me-{{ randAlphaNum 32 }}"
     database:
       name: sqlite3
       args:
