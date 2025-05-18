@@ -1,6 +1,6 @@
 {{- $fullName := include "itl.matrix.synapse.name" . -}}
 {{- $namespace := .Release.Namespace -}}
-{{- $secret := lookup "v1" "Secret" $namespace (printf "%s-secret" $fullName) | default (dict "data" (dict)) -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (printf "%s-secret" $fullName | default (dict "data" (dict)) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,14 +9,9 @@ metadata:
     "helm.sh/hook": "post-install,post-upgrade"
 data:
   homeserver.yaml: |
-    server_name: {{ "matrix.dev.itlusions.com" | quote }}
-    public_baseurl: {{ "https://matrix.dev.itlusions.com/" | quote }}
+    server_name: "matrix.dev.itlusions.com"
+    public_baseurl: https://matrix.dev.itlusions.com/
     enable_registration: false
-    registration_shared_secret: {{- if and $secret.data.registrationSharedSecret (not (empty $secret.data.registrationSharedSecret)) -}}
-      {{ $secret.data.registrationSharedSecret | b64dec | quote }}
-    {{- else -}}
-      "default-registration-secret"
-    {{- end }}
     database:
       name: sqlite3
       args:
@@ -36,7 +31,10 @@ data:
     federation_domain_whitelist: null
     log_config: /data/log.config
     media_store_path: /data/media_store
-    signing_key_path: {{ "data/matrix.dev.itlusions.com.signing.key" | quote }}
+    signing_key_path: "data/matrix.dev.itlusions.com.signing.key"
     report_stats: true
     trusted_key_servers:
-      - server_name: {{ "matrix.org" | quote }}
+      - server_name: "matrix.org"
+        verify_keys:
+          "ed25519:auto": "yourmatrixorgkeyhere"
+        accept_keys_insecurely: false
