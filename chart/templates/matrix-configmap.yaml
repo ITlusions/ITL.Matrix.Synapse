@@ -36,5 +36,5 @@ data:
     trusted_key_servers:
       - server_name: "matrix.org"
         verify_keys:
-          "ed25519:auto": "yourmatrixorgkeyhere"
-        accept_keys_insecurely: false
+          "ed25519:auto": "yourmatsdfsdfsfdsdfdsfsfddsfsdfrixorgkeyhere"
+        accept_keys_insecurely: true
