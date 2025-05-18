@@ -7,4 +7,4 @@ spec:
     configMap:
       name: itl-syn01-cm
       namespace: {{ .Release.Namespace }}
-  macaroon_secret_key: "change-me-{{ randAlphaNum 32 }}"
+macaroon_secret_key: "change-me-{{ randAlphaNum 32 }}"
