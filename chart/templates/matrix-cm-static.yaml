@@ -33,7 +33,7 @@ data:
     federation_domain_whitelist: null
     log_config: /data/log.config
     media_store_path: /data/media_store
-    #signing_key_path: "data/matrix.dev.itlusions.com.signing.key"
+    signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
     report_stats: true
     trusted_key_servers:
       - server_name: "matrix.org"
