@@ -22,18 +22,12 @@ data:
       - port: 8008
         type: http
         tls: false
-        resources: []
+        resources:
+          - names: [client, federation]
+            compress: false
         x_forwarded: true
         bind_addresses: ['0.0.0.0']
-        paths:
-          - path: /_matrix
-            handler: matrix
-          - path: /_synapse/client
-            handler: synapse_admin
-    federation_domain_whitelist: null
-    log_config: /data/log.config
     media_store_path: /data/media_store
     signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
-    report_stats: true
     trusted_key_servers:
       - server_name: "matrix.org"
