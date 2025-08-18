@@ -34,26 +34,6 @@ data:
     log_config: /data/log.config
     media_store_path: /data/media_store
     signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
-    
-    # --- OIDC / Keycloak ---
-    sso:
-      client_whitelist: []
-      whitelisted_sso_clients: []
-
-    oidc_providers:
-      - idp_id: keycloak
-        idp_name: "Keycloak"
-        issuer: "https://sts.itlusions.com/realms/itlusions"
-        client_id: "synapse"
-        client_secret: "REPLACE_WITH_CLIENT_SECRET"
-        scopes: ["openid", "profile", "email"]
-        allow_existing_users: true
-        user_mapping_provider:
-          config:
-            localpart_template: "{{ user.preferred_username | lower | replace(' ', '_') }}"
-            display_name_template: "{{ user.name or user.preferred_username }}"
-            email_template: "{{ user.email }}"
-    
     report_stats: true
     trusted_key_servers:
       - server_name: "matrix.org"
