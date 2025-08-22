@@ -208,7 +208,6 @@ oidc_providers:
     scopes: ["openid", "profile", "email"]
     backchannel_logout_enabled: true
     user_mapping_provider:
-      module: "synapse.handlers.oidc.OidcMappingProvider"
       config:
         localpart_template: "{{`{{ user.preferred_username or user.sub }}`}}"
         display_name_template: "{{`{{ user.name or user.preferred_username or user.email }}`}}"
