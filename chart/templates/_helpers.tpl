@@ -173,6 +173,8 @@ postgres://{{ .Values.postgresql.username }}:{{ .Values.postgresql.password }}@{
 {{- end }}
 
 {{- define "itl.matrix.synapse.homeserver" -}}
+{{- $secretName := printf "%s-secret" (include "itl.matrix.synapse.name" .) -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace $secretName | default (dict "data" (dict)) -}}
 server_name: "matrix.dev.itlusions.com"
 pid_file: /data/homeserver.pid
 presence:
@@ -192,10 +194,10 @@ database:
 log_config: "/data/matrix.dev.itlusions.com.log.config"
 media_store_path: "/data/media_store"
 enable_registration: false
-registration_shared_secret: "{{ randAlphaNum 64 | b64enc }}"
+registration_shared_secret: "{{ if and $secret.data (index $secret.data "registrationSharedSecret") }}{{ index $secret.data "registrationSharedSecret" | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
 enable_registration_without_verification: true
-macaroon_secret_key: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"
-form_secret: "2iTjom-bIq5Yh6:afKjUed^2Eokx8cd_kzdUN,A#0MFAn.tSrC"
+macaroon_secret_key: "{{ if and $secret.data (index $secret.data "macaroonSecretKey") }}{{ index $secret.data "macaroonSecretKey" | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
+form_secret: "{{ if and $secret.data (index $secret.data "formSecret") }}{{ index $secret.data "formSecret" | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
 signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
@@ -205,7 +207,7 @@ oidc_providers:
     discover: true
     issuer: "https://sts.itlusions.com/realms/itlusions"   # Keycloak realm issuer
     client_id: "synapse-tenant1"                            # client you created in Keycloak
-    client_secret: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"               # inject from k8s secret
+    client_secret: "{{ if and $secret.data (index $secret.data "clientSecret") }}{{ index $secret.data "clientSecret" | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"               # inject from k8s secret
     scopes: ["openid", "profile", "email"]
     backchannel_logout_enabled: true
     user_mapping_provider:
