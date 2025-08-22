@@ -191,7 +191,6 @@ database:
     database: /data/homeserver.db
 log_config: "/data/matrix.dev.itlusions.com.log.config"
 media_store_path: "/data/media_store"
-enable_registration: true
 registration_shared_secret: "{{ randAlphaNum 64 | b64enc }}"
 macaroon_secret_key: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"
 form_secret: "2iTjom-bIq5Yh6:afKjUed^2Eokx8cd_kzdUN,A#0MFAn.tSrC"
@@ -204,7 +203,7 @@ oidc_providers:
     discover: true
     issuer: "https://keycloak.example.org/realms/tenant1"   # Keycloak realm issuer
     client_id: "synapse-tenant1"                            # client you created in Keycloak
-    client_secret: "testsecret"               # inject from k8s secret
+    client_secret: "{{ OIDC_CLIENT_SECRET }}"               # inject from k8s secret
     scopes: ["openid", "profile", "email"]
     backchannel_logout_enabled: true
     user_mapping_provider:
