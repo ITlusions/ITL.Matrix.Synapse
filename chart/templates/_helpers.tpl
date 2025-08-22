@@ -191,8 +191,9 @@ database:
     database: /data/homeserver.db
 log_config: "/data/matrix.dev.itlusions.com.log.config"
 media_store_path: "/data/media_store"
-enable_registration: true
+enable_registration: false
 registration_shared_secret: "{{ randAlphaNum 64 | b64enc }}"
+enable_registration_without_verification: true
 macaroon_secret_key: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"
 form_secret: "2iTjom-bIq5Yh6:afKjUed^2Eokx8cd_kzdUN,A#0MFAn.tSrC"
 signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
