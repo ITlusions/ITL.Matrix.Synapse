@@ -209,9 +209,9 @@ oidc_providers:
     user_mapping_provider:
       module: "synapse.handlers.oidc.SynapseOIDCUserMappingProvider"
       config:
-        localpart_template: "{{ {{ user.preferred_username or user.sub }} }}"
-        display_name_template: "{{ {{ user.name or user.preferred_username or user.email }} }}"
-        email_template: "{{ {{ user.email }} }}"
+        localpart_template: "{{`{{ user.preferred_username or user.sub }}`}}"
+        display_name_template: "{{`{{ user.name or user.preferred_username or user.email }}`}}"
+        email_template: "{{`{{ user.email }}`}}"
 account_threepid_delegates: {}
 report_stats: true
 opentracing: {}
