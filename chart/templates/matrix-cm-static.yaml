@@ -1939,32 +1939,6 @@ data:
     # recognised.)
     #
     oidc_providers:
-      # Generic example
-      #
-      #- idp_id: my_idp
-      #  idp_name: "My OpenID provider"
-      #  idp_icon: "mxc://example.com/mediaid"
-      #  discover: false
-      #  issuer: "https://accounts.example.com/"
-      #  client_id: "provided-by-your-issuer"
-      #  client_secret: "provided-by-your-issuer"
-      #  client_auth_method: client_secret_post
-      #  scopes: ["openid", "profile"]
-      #  authorization_endpoint: "https://accounts.example.com/oauth2/auth"
-      #  token_endpoint: "https://accounts.example.com/oauth2/token"
-      #  userinfo_endpoint: "https://accounts.example.com/userinfo"
-      #  jwks_uri: "https://accounts.example.com/.well-known/jwks.json"
-      #  skip_verification: true
-      #  user_mapping_provider:
-      #    config:
-      #      subject_claim: "id"
-      #      localpart_template: "{{ user.login }}"
-      #      display_name_template: "{{ user.name }}"
-      #      email_template: "{{ user.email }}"
-      #  attribute_requirements:
-      #    - attribute: userGroup
-      #      value: "synapseUsers"
-
 
     # Enable Central Authentication Service (CAS) for registration and login.
     #
