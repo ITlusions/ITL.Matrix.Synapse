@@ -171,3 +171,38 @@ postgres://{{ .Values.postgresql.username }}:{{ .Values.postgresql.password }}@{
 postgres://{{ .Values.postgresql.username }}:{{ .Values.postgresql.password }}@{{ .Values.postgresql.hostname }}:{{ .Values.postgresql.port }}/%s{{ if .Values.postgresql.ssl }}?ssl=true&sslmode={{ .Values.postgresql.sslMode }}{{ end }}
 {{- end }}
 {{- end }}
+
+{{- define "itl.matrix.synapse.homeserver" -}}
+server_name: "my.matrix.host"
+pid_file: /data/homeserver.pid
+presence:
+  presence_router: {}
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+database:
+  name: sqlite3
+  args:
+    database: /data/homeserver.db
+log_config: "/data/my.matrix.host.log.config"
+media_store_path: "/data/media_store"
+registration_shared_secret: "maQKuVjpSMBH@#F9VOmW7g#DqSwm_VYDM;ajb6^3QBf,8VhXYg"
+macaroon_secret_key: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"
+form_secret: "2iTjom-bIq5Yh6:afKjUed^2Eokx8cd_kzdUN,A#0MFAn.tSrC"
+signing_key_path: "/data/my.matrix.host.signing.key"
+trusted_key_servers:
+  - server_name: "matrix.org"
+account_threepid_delegates: {}
+report_stats: true
+opentracing: {}
+stats: {}
+user_directory: {}
+redis: {}
+push: {}
+spam_checker: {}
+{{- end }}
