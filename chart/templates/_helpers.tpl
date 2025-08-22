@@ -204,7 +204,7 @@ oidc_providers:
     discover: true
     issuer: "https://keycloak.example.org/realms/tenant1"   # Keycloak realm issuer
     client_id: "synapse-tenant1"                            # client you created in Keycloak
-    client_secret: "{{ OIDC_CLIENT_SECRET }}"               # inject from k8s secret
+    client_secret: "testsecret"               # inject from k8s secret
     scopes: ["openid", "profile", "email"]
     backchannel_logout_enabled: true
     user_mapping_provider:
