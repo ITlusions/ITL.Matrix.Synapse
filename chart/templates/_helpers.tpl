@@ -216,7 +216,7 @@ oidc_providers:
         display_name_template: "{{`{{ user.name or user.preferred_username or user.email }}`}}"
         email_template: "{{`{{ user.email }}`}}"
 account_threepid_delegates: {}
-report_stats: {{ .Values.tenant.homeserver.values.reportStats | default true }}
+report_stats: {{ if hasKey .Values.tenant.homeserver.values "reportStats" }}{{ .Values.tenant.homeserver.values.reportStats }}{{ else }}true{{ end }}
 opentracing: {}
 stats: {}
 user_directory: {}
