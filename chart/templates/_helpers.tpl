@@ -173,7 +173,9 @@ postgres://{{ .Values.postgresql.username }}:{{ .Values.postgresql.password }}@{
 {{- end }}
 
 {{- define "itl.matrix.synapse.homeserver" -}}
-server_name: "matrix.dev.itlusions.com"
+{{- $fullName := include "itl.matrix.synapse.name" . -}}
+{{- $tenantName := .Values.tenant.name | default .Release.Name -}}
+server_name: "{{ .Values.tenant.homeserver.values.serverName | default "matrix.dev.itlusions.com" }}"
 pid_file: /data/homeserver.pid
 presence:
   presence_router: {}
@@ -189,14 +191,14 @@ database:
   name: sqlite3
   args:
     database: /data/homeserver.db
-log_config: "/data/matrix.dev.itlusions.com.log.config"
+log_config: "/data/{{ .Values.tenant.homeserver.values.serverName | default "matrix.dev.itlusions.com" }}.log.config"
 media_store_path: "/data/media_store"
 enable_registration: false
-registration_shared_secret: "{{ randAlphaNum 64 | b64enc }}"
+registration_shared_secret: "{{ printf "%s-registration" $tenantName | sha256sum | trunc 32 | b64enc }}"
 enable_registration_without_verification: true
-macaroon_secret_key: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"
-form_secret: "2iTjom-bIq5Yh6:afKjUed^2Eokx8cd_kzdUN,A#0MFAn.tSrC"
-signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
+macaroon_secret_key: "{{ printf "%s-macaroon" $tenantName | sha256sum | trunc 32 | b64enc }}"
+form_secret: "{{ printf "%s-form" $tenantName | sha256sum | trunc 32 | b64enc }}"
+signing_key_path: "/data/{{ .Values.tenant.homeserver.values.serverName | default "matrix.dev.itlusions.com" }}.signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
 oidc_providers:
@@ -204,8 +206,8 @@ oidc_providers:
     idp_name: "ITlusions (keycloak)"
     discover: true
     issuer: "https://sts.itlusions.com/realms/itlusions"   # Keycloak realm issuer
-    client_id: "synapse-tenant1"                            # client you created in Keycloak
-    client_secret: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"               # inject from k8s secret
+    client_id: "synapse-{{ $tenantName }}"                            # client you created in Keycloak
+    client_secret: "{{ printf "%s-client" $tenantName | sha256sum | trunc 32 | b64enc }}"               # inject from k8s secret
     scopes: ["openid", "profile", "email"]
     backchannel_logout_enabled: true
     user_mapping_provider:
@@ -214,7 +216,7 @@ oidc_providers:
         display_name_template: "{{`{{ user.name or user.preferred_username or user.email }}`}}"
         email_template: "{{`{{ user.email }}`}}"
 account_threepid_delegates: {}
-report_stats: true
+report_stats: {{ .Values.tenant.homeserver.values.reportStats | default true }}
 opentracing: {}
 stats: {}
 user_directory: {}
