@@ -200,10 +200,10 @@ signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
 oidc_providers:
-  - idp_id: keycloak-tenant1
-    idp_name: "Keycloak (tenant1)"
+  - idp_id: itlusions-keycloak
+    idp_name: "ITlusions (keycloak)"
     discover: true
-    issuer: "https://keycloak.example.org/realms/tenant1"   # Keycloak realm issuer
+    issuer: "https://sts.itlusions.com/realms/itlusions"   # Keycloak realm issuer
     client_id: "synapse-tenant1"                            # client you created in Keycloak
     client_secret: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"               # inject from k8s secret
     scopes: ["openid", "profile", "email"]
