@@ -191,7 +191,7 @@ database:
     database: /data/homeserver.db
 log_config: "/data/matrix.dev.itlusions.com.log.config"
 media_store_path: "/data/media_store"
-registration_shared_secret: "{{ randAlphaNum 64 | b64enc }}"
+registration_shared_secret: "maQKuVjpSMBH@#F9VOmW7g#DqSwm_VYDM;ajb6^3QBf,8VhXYg"
 macaroon_secret_key: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"
 form_secret: "2iTjom-bIq5Yh6:afKjUed^2Eokx8cd_kzdUN,A#0MFAn.tSrC"
 signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
@@ -203,15 +203,15 @@ oidc_providers:
     discover: true
     issuer: "https://keycloak.example.org/realms/tenant1"   # Keycloak realm issuer
     client_id: "synapse-tenant1"                            # client you created in Keycloak
-    client_secret: "{{ OIDC_CLIENT_SECRET }}"               # inject from k8s secret
+    client_secret: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"               # inject from k8s secret
     scopes: ["openid", "profile", "email"]
     backchannel_logout_enabled: true
     user_mapping_provider:
       module: "synapse.handlers.oidc.SynapseOIDCUserMappingProvider"
       config:
-        localpart_template: "{{ user.preferred_username or user.sub }}"
-        display_name_template: "{{ user.name or user.preferred_username or user.email }}"
-        email_template: "{{ user.email }}"
+        localpart_template: "{{ {{ user.preferred_username or user.sub }} }}"
+        display_name_template: "{{ {{ user.name or user.preferred_username or user.email }} }}"
+        email_template: "{{ {{ user.email }} }}"
 account_threepid_delegates: {}
 report_stats: true
 opentracing: {}
