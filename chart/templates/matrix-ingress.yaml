@@ -48,11 +48,11 @@ spec:
             backend:
               {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
               service:
-                name: {{ $fullName }}-matrix
+                name: {{ $fullName }}
                 port:
                   number: 8008
               {{- else }}
-              serviceName: {{ $fullName }}-matrix
+              serviceName: {{ $fullName }}
               servicePort: 8008
               {{- end }}
           {{- end }}
