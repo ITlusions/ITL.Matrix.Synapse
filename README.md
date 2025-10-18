@@ -90,7 +90,54 @@ helm uninstall my-synapse-tenant
 
 ---
 
+#### Development and Validation
+
+This chart includes comprehensive validation and testing pipelines to ensure security and quality.
+
+##### Automated Validation
+The repository includes GitHub Actions workflows that automatically validate:
+- Helm chart syntax and structure
+- Template rendering
+- Kubernetes manifest validation
+- Security scanning
+- Secret auto-generation verification
+- Chart testing with Kind
+
+##### Local Development
+Use the included Makefile for local development and validation:
+
+```bash
+# Lint the chart
+make lint
+
+# Validate chart and templates
+make validate
+
+# Run comprehensive tests
+make test
+
+# Run full CI pipeline locally
+make ci
+
+# Get help with available targets
+make help
+```
+
+##### Security Features
+- **Auto-generated secrets**: All secrets are automatically generated using cryptographically secure random values
+- **Upgrade preservation**: Secrets are preserved during chart upgrades using Helm's lookup function
+- **No hardcoded secrets**: All static secrets have been eliminated from the chart templates
+- **Security scanning**: Automated security scanning with Kubesec
+
+The chart generates the following secrets automatically:
+- `macaroonSecretKey`: Used for secure cookie signing
+- `formSecret`: Used for CSRF protection
+- `clientSecret`: Used for OIDC authentication
+- `coturnSharedSecret`: Used for TURN server authentication
+
+---
+
 #### License
 This chart is licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
 
----# ITL.Matrix.Synapse
+---

@@ -422,8 +422,8 @@ coturn:
   allowGuests: true
 
   # Shared secret for communication between Synapse and Coturn.
-  # Optional, will be auto-generated if not overridden here.
-  sharedSecret: "ChangeMe"
+  # This will be auto-generated and stored in the Kubernetes secret if not specified.
+  # sharedSecret: ""
 
   # UDP port range for TURN connections
   ports:

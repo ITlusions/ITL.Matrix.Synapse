@@ -1,0 +1,225 @@
+name: Helm Chart Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths: [ 'chart/**' ]
+  pull_request:
+    branches: [ main, develop ]
+    paths: [ 'chart/**' ]
+  workflow_dispatch:
+
+env:
+  HELM_VERSION: v3.14.0
+  KUBERNETES_VERSION: v1.29.0
+
+jobs:
+  lint-and-validate:
+    name: Lint and Validate Helm Chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: ${{ env.KUBERNETES_VERSION }}
+
+      - name: Helm Lint
+        run: |
+          echo "Running Helm lint on chart..."
+          helm lint chart/
+          echo "✅ Helm lint passed"
+
+      - name: Helm Template Rendering
+        run: |
+          echo "Testing Helm template rendering..."
+          helm template test-release chart/ --output-dir /tmp/rendered-templates
+          echo "✅ Template rendering successful"
+          
+          echo "Checking for generated secrets..."
+          if grep -q "macaroonSecretKey" /tmp/rendered-templates/synapse-tenant/templates/matrix-secret.yaml; then
+            echo "✅ macaroonSecretKey found in rendered templates"
+          else
+            echo "❌ macaroonSecretKey not found in rendered templates"
+            exit 1
+          fi
+          
+          if grep -q "formSecret" /tmp/rendered-templates/synapse-tenant/templates/matrix-secret.yaml; then
+            echo "✅ formSecret found in rendered templates"
+          else
+            echo "❌ formSecret not found in rendered templates"
+            exit 1
+          fi
+
+      - name: Validate Kubernetes Manifests
+        run: |
+          echo "Validating Kubernetes manifests..."
+          for file in /tmp/rendered-templates/synapse-tenant/templates/*.yaml; do
+            if [[ -f "$file" ]]; then
+              echo "Validating $file..."
+              kubectl --dry-run=client apply -f "$file" > /dev/null
+            fi
+          done
+          echo "✅ All Kubernetes manifests are valid"
+
+      - name: Check for Hardcoded Secrets
+        run: |
+          echo "Checking for hardcoded secrets in templates..."
+          
+          # Check for the old hardcoded secrets that should be replaced
+          if grep -r "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT\*i9~bZrZy~_@" chart/templates/; then
+            echo "❌ Found hardcoded macaroon_secret_key in templates"
+            exit 1
+          fi
+          
+          if grep -r "2iTjom-bIq5Yh6:afKjUed\^2Eokx8cd_kzdUN,A#0MFAn.tSrC" chart/templates/; then
+            echo "❌ Found hardcoded form_secret in templates"
+            exit 1
+          fi
+          
+          if grep -r '"ChangeMe"' chart/templates/; then
+            echo "❌ Found hardcoded 'ChangeMe' secret in templates"
+            exit 1
+          fi
+          
+          echo "✅ No hardcoded secrets found in templates"
+
+      - name: Verify Secret Auto-generation
+        run: |
+          echo "Verifying secret auto-generation..."
+          
+          # Template the chart twice and ensure secrets are different (when no existing secrets)
+          helm template test1 chart/ > /tmp/test1.yaml
+          helm template test2 chart/ > /tmp/test2.yaml
+          
+          # Extract secret values and compare
+          secret1=$(grep -A 10 "kind: Secret" /tmp/test1.yaml | grep "macaroonSecretKey:" | cut -d: -f2 | tr -d ' ')
+          secret2=$(grep -A 10 "kind: Secret" /tmp/test2.yaml | grep "macaroonSecretKey:" | cut -d: -f2 | tr -d ' ')
+          
+          if [[ "$secret1" != "$secret2" ]]; then
+            echo "✅ Secrets are auto-generated and unique"
+          else
+            echo "❌ Secrets are not being auto-generated properly"
+            exit 1
+          fi
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install Kubesec
+        run: |
+          wget https://github.com/controlplaneio/kubesec/releases/latest/download/kubesec_linux_amd64.tar.gz
+          tar -xzf kubesec_linux_amd64.tar.gz
+          sudo mv kubesec /usr/local/bin/
+
+      - name: Render Templates for Security Scan
+        run: |
+          helm template security-test chart/ --output-dir /tmp/security-scan
+
+      - name: Run Kubesec Security Scan
+        run: |
+          echo "Running security scan on rendered templates..."
+          for file in /tmp/security-scan/synapse-tenant/templates/*.yaml; do
+            if [[ -f "$file" ]] && [[ "$(basename "$file")" != "*.yaml" ]]; then
+              echo "Scanning $file..."
+              kubesec scan "$file" | jq '.score' || echo "Scan completed for $file"
+            fi
+          done
+          echo "✅ Security scan completed"
+
+  chart-testing:
+    name: Chart Testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install chart-testing
+        uses: helm/chart-testing-action@v2.6.1
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: kind
+
+      - name: List changed charts
+        id: list-changed
+        run: |
+          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch }})
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Lint charts with ct
+        if: steps.list-changed.outputs.changed == 'true'
+        run: ct lint --target-branch ${{ github.event.repository.default_branch }}
+
+      - name: Install charts with ct
+        if: steps.list-changed.outputs.changed == 'true'
+        run: ct install --target-branch ${{ github.event.repository.default_branch }}
+
+  documentation:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install helm-docs
+        run: |
+          wget https://github.com/norwoodj/helm-docs/releases/download/v1.14.2/helm-docs_1.14.2_Linux_x86_64.tar.gz
+          tar -xzf helm-docs_1.14.2_Linux_x86_64.tar.gz
+          sudo mv helm-docs /usr/local/bin/
+
+      - name: Generate documentation
+        run: |
+          cd chart
+          helm-docs --dry-run
+          echo "✅ Documentation check completed"
+
+      - name: Verify Chart.yaml completeness
+        run: |
+          echo "Checking Chart.yaml completeness..."
+          
+          required_fields=("name" "version" "appVersion" "description" "type")
+          for field in "${required_fields[@]}"; do
+            if ! grep -q "^${field}:" chart/Chart.yaml; then
+              echo "❌ Missing required field: $field"
+              exit 1
+            fi
+          done
+          
+          echo "✅ Chart.yaml is complete"
