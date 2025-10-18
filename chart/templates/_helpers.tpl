@@ -195,10 +195,10 @@ database:
 log_config: "/data/matrix.dev.itlusions.com.log.config"
 media_store_path: "/data/media_store"
 enable_registration: false
-registration_shared_secret: "{{ $synapseSecret.data.registration_shared_secret | b64dec | default (randAlphaNum 64) }}"
+registration_shared_secret: "{{ if $synapseSecret.data.registration_shared_secret }}{{ $synapseSecret.data.registration_shared_secret | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
 enable_registration_without_verification: true
-macaroon_secret_key: "{{ $synapseSecret.data.macaroon_secret_key | b64dec | default (randAlphaNum 64) }}"
-form_secret: "{{ $synapseSecret.data.form_secret | b64dec | default (randAlphaNum 64) }}"
+macaroon_secret_key: "{{ if $synapseSecret.data.macaroon_secret_key }}{{ $synapseSecret.data.macaroon_secret_key | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
+form_secret: "{{ if $synapseSecret.data.form_secret }}{{ $synapseSecret.data.form_secret | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
 signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
@@ -210,7 +210,7 @@ oidc_providers:
     issuer: "https://sts.itlusions.com/realms/itlusions"
     client_id: "matrix-synapse"
     {{- if or .Values.oidc.clientSecret ($synapseSecret.data.client_secret) }}
-    client_secret: "{{ $synapseSecret.data.client_secret | b64dec | default .Values.oidc.clientSecret }}"
+    client_secret: "{{ if $synapseSecret.data.client_secret }}{{ $synapseSecret.data.client_secret | b64dec }}{{ else }}{{ .Values.oidc.clientSecret }}{{ end }}"
     {{- end }}
     scopes: ["openid", "profile", "email", "roles"]
     authorization_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/auth"
