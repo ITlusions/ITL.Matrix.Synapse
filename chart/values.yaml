@@ -154,6 +154,15 @@ matrix:
     # a secret key is derived from the signing key.
     #
     # macaroonSecretKey: <PRIVATE STRING>
+    
+    # If set, allows registration of standard or admin accounts by anyone who
+    # has the shared secret, even if registration is otherwise disabled.
+    # Leave empty to auto-generate a random secret on first deployment
+    # registrationSharedSecret: <PRIVATE STRING>
+    
+    # Secret used for various form security features
+    # Leave empty to auto-generate a random secret on first deployment  
+    # formSecret: <PRIVATE STRING>
 
     # This disables the warning that is emitted when the
     # trustedKeyServers include 'matrix.org'. See below.
@@ -701,6 +710,16 @@ networkPolicies:
 
 isOpenshift: true
 
+# OIDC Configuration for Keycloak integration
+oidc:
+  # Enable OIDC authentication with Keycloak
+  enabled: false
+  
+  # Client secret for the matrix-synapse client in Keycloak
+  # Leave empty ("") for public clients that don't require a secret
+  # Set to the actual client secret for confidential clients
+  # The secret will be stored in a Kubernetes Secret for security
+  clientSecret: ""
 
 tenant:
   name: itl-syn01

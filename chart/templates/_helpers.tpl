@@ -173,6 +173,9 @@ postgres://{{ .Values.postgresql.username }}:{{ .Values.postgresql.password }}@{
 {{- end }}
 
 {{- define "itl.matrix.synapse.homeserver" -}}
+{{- $fullName := include "itl.matrix.synapse.name" . -}}
+{{- $namespace := .Release.Namespace -}}
+{{- $synapseSecret := lookup "v1" "Secret" $namespace (printf "%s-secrets" $fullName) | default (dict "data" (dict)) -}}
 server_name: "matrix.dev.itlusions.com"
 pid_file: /data/homeserver.pid
 presence:
@@ -192,27 +195,40 @@ database:
 log_config: "/data/matrix.dev.itlusions.com.log.config"
 media_store_path: "/data/media_store"
 enable_registration: false
-registration_shared_secret: "{{ randAlphaNum 64 | b64enc }}"
+registration_shared_secret: "{{ $synapseSecret.data.registration_shared_secret | b64dec | default (randAlphaNum 64) }}"
 enable_registration_without_verification: true
-macaroon_secret_key: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"
-form_secret: "2iTjom-bIq5Yh6:afKjUed^2Eokx8cd_kzdUN,A#0MFAn.tSrC"
+macaroon_secret_key: "{{ $synapseSecret.data.macaroon_secret_key | b64dec | default (randAlphaNum 64) }}"
+form_secret: "{{ $synapseSecret.data.form_secret | b64dec | default (randAlphaNum 64) }}"
 signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
+{{- if .Values.oidc.enabled }}
 oidc_providers:
   - idp_id: itlusions-keycloak
-    idp_name: "ITlusions (keycloak)"
+    idp_name: "ITlusions (Keycloak)"
     discover: true
-    issuer: "https://sts.itlusions.com/realms/itlusions"   # Keycloak realm issuer
-    client_id: "synapse-tenant1"                            # client you created in Keycloak
-    client_secret: "uLJ62kwNWO_DLcKAmbzqYkFwlDQWjNl5@G#SKT*i9~bZrZy~_@"               # inject from k8s secret
-    scopes: ["openid", "profile", "email"]
+    issuer: "https://sts.itlusions.com/realms/itlusions"
+    client_id: "matrix-synapse"
+    {{- if or .Values.oidc.clientSecret ($synapseSecret.data.client_secret) }}
+    client_secret: "{{ $synapseSecret.data.client_secret | b64dec | default .Values.oidc.clientSecret }}"
+    {{- end }}
+    scopes: ["openid", "profile", "email", "roles"]
+    authorization_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/auth"
+    token_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/token"
+    userinfo_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/userinfo"
+    jwks_uri: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/certs"
+    skip_verification: false
     backchannel_logout_enabled: true
+    allow_existing_users: true
     user_mapping_provider:
       config:
-        localpart_template: "{{`{{ user.preferred_username or user.sub }}`}}"
+        localpart_template: "{{`{{ user.preferred_username | lower | replace('-', '_') | replace('.', '_') }}`}}"
         display_name_template: "{{`{{ user.name or user.preferred_username or user.email }}`}}"
         email_template: "{{`{{ user.email }}`}}"
+        attribute_requirements:
+          - attribute: "roles"
+            value: "student|instructor|admin"
+{{- end }}
 account_threepid_delegates: {}
 report_stats: true
 opentracing: {}
