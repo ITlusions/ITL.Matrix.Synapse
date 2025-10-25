@@ -177,6 +177,8 @@ postgres://{{ .Values.postgresql.username }}:{{ .Values.postgresql.password }}@{
 {{- $namespace := .Release.Namespace -}}
 {{- $synapseSecret := lookup "v1" "Secret" $namespace (printf "%s-secrets" $fullName) | default (dict "data" (dict)) -}}
 server_name: "matrix.dev.itlusions.com"
+public_baseurl: https://matrix.dev.itlusions.com 
+serve_server_wellknown: true
 pid_file: /data/homeserver.pid
 presence:
   presence_router: {}
