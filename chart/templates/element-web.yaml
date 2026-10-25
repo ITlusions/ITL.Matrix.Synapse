@@ -1,0 +1,111 @@
+{{- if .Values.elementWeb.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-element-web-config
+  labels:
+    app.kubernetes.io/name: element-web
+data:
+  config.json: |
+    {
+      "default_server_name": {{ .Values.tenant.homeserver.values.serverName | quote }},
+      "brand": "ITlusions Comms",
+      "disable_custom_urls": true,
+      "disable_guests": true,
+      "show_labs_settings": false,
+      "default_country_code": "NL",
+      "default_theme": "light",
+      "settingDefaults": {
+        "UIFeature.urlPreviews": true
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-element-web
+  labels:
+    app.kubernetes.io/name: element-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: element-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: element-web
+      annotations:
+        config-hash: {{ dict "serverName" .Values.tenant.homeserver.values.serverName "config" .Values.elementWeb | toJson | sha256sum }}
+    spec:
+      containers:
+        - name: element-web
+          image: "{{ .Values.elementWeb.image.repository }}:{{ .Values.elementWeb.image.tag }}"
+          imagePullPolicy: {{ .Values.elementWeb.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: config
+              mountPath: /app/config.json
+              subPath: config.json
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-element-web-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-element-web
+  labels:
+    app.kubernetes.io/name: element-web
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: element-web
+---
+{{- if .Values.elementWeb.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-element-web
+  labels:
+    app.kubernetes.io/name: element-web
+  annotations:
+    {{- toYaml .Values.elementWeb.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.elementWeb.ingress.className }}
+  tls:
+    - secretName: {{ .Values.elementWeb.ingress.tlsSecretName }}
+      hosts:
+        - {{ .Values.elementWeb.ingress.host }}
+  rules:
+    - host: {{ .Values.elementWeb.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-element-web
+                port:
+                  number: 80
+{{- end }}
+{{- end }}

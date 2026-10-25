@@ -166,8 +166,8 @@ Synapse hostname prepended with https:// to form a complete URL
 {{- $namespace := .Release.Namespace -}}
 {{- $serverName := .Values.tenant.homeserver.values.serverName -}}
 {{- $synapseSecret := lookup "v1" "Secret" $namespace (printf "%s-secrets" $fullName) | default (dict "data" (dict)) -}}
-{{- $oidcSecret := lookup "v1" "Secret" $namespace "matrix-synapse-oidc-secret" | default (dict "data" (dict)) -}}
 {{- $dbSecret := lookup "v1" "Secret" $namespace (printf "%s-db-app" .Release.Name) | default (dict "data" (dict)) -}}
+{{- $masSharedSecret := lookup "v1" "Secret" $namespace "mas-synapse-shared-secret" | default (dict "data" (dict)) -}}
 server_name: "{{ $serverName }}"
 public_baseurl: https://{{ $serverName }}
 serve_server_wellknown: true
@@ -217,32 +217,23 @@ form_secret: "{{ if $synapseSecret.data.form_secret }}{{ $synapseSecret.data.for
 signing_key_path: "/data/{{ $serverName }}.signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
-{{- if .Values.oidc.enabled }}
-oidc_providers:
-  - idp_id: itlusions-keycloak
-    idp_name: "ITlusions (Keycloak)"
-    discover: true
-    issuer: {{ .Values.oidc.issuer | quote }}
-    client_id: {{ .Values.oidc.clientId | quote }}
-    {{- if index $oidcSecret.data "client-secret" }}
-    client_secret: "{{ index $oidcSecret.data "client-secret" | b64dec }}"
-    {{- end }}
-    scopes: ["openid", "profile", "email", "roles"]
-    authorization_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/auth"
-    token_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/token"
-    userinfo_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/userinfo"
-    jwks_uri: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/certs"
-    skip_verification: false
-    backchannel_logout_enabled: true
-    allow_existing_users: true
-    user_mapping_provider:
-      config:
-        localpart_template: "{{`{{ user.preferred_username | lower | replace('-', '_') | replace('.', '_') }}`}}"
-        display_name_template: "{{`{{ user.name or user.preferred_username or user.email }}`}}"
-        email_template: "{{`{{ user.email }}`}}"
-        attribute_requirements:
-          - attribute: "roles"
-            value: "student|instructor|admin"
+{{- if .Values.matrixAuthService.enabled }}
+# Auth fully delegated to Matrix Authentication Service (MSC3861) -
+# replaces the old oidc_providers block entirely. Confirmed via MAS's
+# own docs and the matrix-docker-ansible-deploy project's migration
+# notes: Synapse's native oidc_providers and matrix_authentication_service
+# are not meant to coexist - OIDC config moves INTO MAS's own
+# upstream_oauth2 config instead (see ITL.MatrixAuthService). The
+# shared secret below must match MAS's matrix.secret exactly - it's
+# generated once by ITL.MatrixAuthService and mirrored into this
+# namespace, same cross-namespace secret-mirroring idiom used
+# throughout this session.
+matrix_authentication_service:
+  enabled: true
+  endpoint: {{ .Values.matrixAuthService.endpoint | quote }}
+  {{- if index $masSharedSecret.data "shared-secret" }}
+  secret: "{{ index $masSharedSecret.data "shared-secret" | b64dec }}"
+  {{- end }}
 {{- end }}
 account_threepid_delegates: {}
 report_stats: {{ .Values.tenant.homeserver.values.reportStats }}

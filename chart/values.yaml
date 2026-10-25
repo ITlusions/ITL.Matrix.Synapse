@@ -725,22 +725,14 @@ isOpenshift: true
 # field anymore - it was never auto-generated before (confirmed - the
 # old synapse-secrets.yaml only set client_secret if this field was
 # already a non-empty string, with no generation path at all).
-oidc:
+# Auth fully delegated to Matrix Authentication Service (ITL.MatrixAuthService)
+# via MSC3861 - replaces the old direct Keycloak OIDC client entirely.
+# Confirmed: Synapse's own oidc_providers and matrix_authentication_service
+# aren't meant to coexist, so there's no more Keycloak client/secret
+# owned by this chart - MAS owns that relationship now.
+matrixAuthService:
   enabled: true
-  clientId: matrix-synapse
-  keycloakCRName: itl-keycloak
-  keycloakNamespace: itl-keycloak
-  realm: itlusions
-  issuer: "https://sts.itlusions.com/realms/itlusions"
-  displayName: "Matrix Synapse"
-  # /_synapse/client/oidc/callback is Synapse's fixed OIDC callback
-  # path - not configurable, confirmed from its own docs.
-  redirectUris:
-    - "https://matrix.itlusions.com/_synapse/client/oidc/callback"
-    - "https://matrix.itlusions.nl/_synapse/client/oidc/callback"
-  webOrigins:
-    - "https://matrix.itlusions.com"
-    - "https://matrix.itlusions.nl"
+  endpoint: "http://mas.matrix-auth.svc.cluster.local:8080"
 
 tenant:
   name: itl-syn01
@@ -779,3 +771,28 @@ tenant:
         paths:
           - path: /
             pathType: Prefix
+
+# Element Web - the actual chat UI, since integration_matrix (the
+# Nextcloud app) only sends files into Matrix rooms, it isn't a chat
+# client. Static SPA, config.json mounted at /app/config.json
+# (confirmed from the official docs' docker run example - the actual
+# Dockerfile wasn't fetchable to verify directly, but matches every
+# third-party deployment example found too). default_server_name
+# triggers .well-known/matrix/client auto-discovery against our own
+# homeserver, rather than hardcoding the homeserver URL twice.
+elementWeb:
+  enabled: true
+  image:
+    repository: ghcr.io/element-hq/element-web
+    # Confirmed against the real GitHub releases API - latest
+    # non-draft release, published 2026-10-16.
+    tag: "v1.12.32"
+    pullPolicy: IfNotPresent
+  ingress:
+    enabled: true
+    className: "itl-traefik"
+    host: comms.itlusions.com
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
+      cert-manager.io/cluster-issuer: "letsencrypt-issuer"
+    tlsSecretName: comms-itlusions-com-tls
