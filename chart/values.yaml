@@ -289,6 +289,11 @@ synapse:
     # manage here.
     tag: v1.163.2
     pullPolicy: IfNotPresent
+  # Persistent storage for /data - signing key, media store, logs.
+  # Used by templates/synapse-deployment.yaml's PVC.
+  persistence:
+    size: 10Gi
+    storageClass: ""
   service:
     type: ClusterIP
     port: 80

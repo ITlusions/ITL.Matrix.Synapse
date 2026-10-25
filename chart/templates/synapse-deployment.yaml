@@ -1,0 +1,124 @@
+{{- $fullName := include "itl.matrix.synapse.name" . -}}
+# Self-contained Deployment, not the "kind: Synapse" custom resource
+# this chart used to create - that depended on a third-party operator
+# (apiVersion synapse.opdev.io/v1alpha1) whose GitHub repo is archived
+# (confirmed 2026-08-24, no longer maintained, was only ever "tested
+# on OpenShift 4.9.0" per its own README, not vanilla Kubernetes).
+# Same reasoning as ITL.Forgejo/ITL.Nextcloud: a plain Deployment we
+# control beats depending on abandoned third-party code for whether
+# this runs at all.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "itl.matrix.synapse.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $fullName }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $fullName }}
+      annotations:
+        # Picks up homeserver.yaml content changes (secret rotation,
+        # config edits) on the next rollout, same reasoning as every
+        # other hash-annotation in this session's charts.
+        config-hash: {{ include "itl.matrix.synapse.homeserver" . | sha256sum }}
+    spec:
+      initContainers:
+        # Synapse's own "generate" mode, not custom keygen logic -
+        # it's documented as idempotent: it only creates files that
+        # don't already exist. Our homeserver.yaml is already mounted
+        # via the ConfigMap, so generate mode skips regenerating it
+        # and just ensures the signing key (which "run" mode requires
+        # to already exist, and will hard-fail without) gets created
+        # on first boot.
+        - name: generate-signing-key
+          image: "{{ .Values.synapse.image.repository }}:{{ .Values.synapse.image.tag }}"
+          imagePullPolicy: {{ .Values.synapse.image.pullPolicy }}
+          args: ["generate"]
+          env:
+            - name: SYNAPSE_SERVER_NAME
+              value: {{ .Values.tenant.homeserver.values.serverName | quote }}
+            - name: SYNAPSE_REPORT_STATS
+              value: {{ .Values.tenant.homeserver.values.reportStats | quote }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: homeserver-config
+              mountPath: /data/homeserver.yaml
+              subPath: homeserver.yaml
+              readOnly: true
+      containers:
+        - name: synapse
+          image: "{{ .Values.synapse.image.repository }}:{{ .Values.synapse.image.tag }}"
+          imagePullPolicy: {{ .Values.synapse.image.pullPolicy }}
+          args: ["run"]
+          ports:
+            - name: http
+              containerPort: 8008
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: homeserver-config
+              mountPath: /data/homeserver.yaml
+              subPath: homeserver.yaml
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ $fullName }}-data
+        - name: homeserver-config
+          configMap:
+            name: {{ $fullName }}-cm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "itl.matrix.synapse.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8008
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ $fullName }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fullName }}-data
+  labels:
+    {{- include "itl.matrix.synapse.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.synapse.persistence.size | default "10Gi" }}
+  {{- if .Values.synapse.persistence.storageClass }}
+  storageClassName: {{ .Values.synapse.persistence.storageClass }}
+  {{- end }}
