@@ -808,3 +808,13 @@ elementWeb:
       traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
       cert-manager.io/cluster-issuer: "letsencrypt-issuer"
     tlsSecretName: comms-itlusions-com-tls
+  # Self-hosted replacement for matrix.to - confirmed from Element's
+  # own docs, this is a real config.json option (permalinkPrefix) that
+  # overrides the default matrix.to prefix for links Element Web
+  # generates and shares. Note: mobile Element apps only auto-detect
+  # matrix.to links as "open in app" by default - a custom prefix like
+  # this one needs MDM configuration to get the same behavior on
+  # mobile, confirmed from Element's on-prem docs. Clicking the link
+  # still works everywhere either way, just opens as a normal web page
+  # on mobile instead of deep-linking into the app.
+  permalinkPrefix: "https://comms.itlusions.com"

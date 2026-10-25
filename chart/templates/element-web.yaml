@@ -9,6 +9,7 @@ data:
   config.json: |
     {
       "default_server_name": {{ .Values.tenant.homeserver.values.serverName | quote }},
+      "permalinkPrefix": {{ .Values.elementWeb.permalinkPrefix | quote }},
       "brand": "ITlusions Comms",
       "disable_custom_urls": true,
       "disable_guests": true,
