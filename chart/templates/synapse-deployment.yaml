@@ -46,7 +46,11 @@ spec:
             - name: SYNAPSE_SERVER_NAME
               value: {{ .Values.tenant.homeserver.values.serverName | quote }}
             - name: SYNAPSE_REPORT_STATS
-              value: {{ .Values.tenant.homeserver.values.reportStats | quote }}
+              # Must be the literal string "yes"/"no" - confirmed live,
+              # the image's own generate-config argparse rejects
+              # "true"/"false" with "invalid choice", crash-looping
+              # the init container.
+              value: {{ if .Values.tenant.homeserver.values.reportStats }}"yes"{{ else }}"no"{{ end }}
           volumeMounts:
             - name: data
               mountPath: /data
