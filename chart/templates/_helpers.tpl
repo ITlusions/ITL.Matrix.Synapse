@@ -168,6 +168,7 @@ Synapse hostname prepended with https:// to form a complete URL
 {{- $synapseSecret := lookup "v1" "Secret" $namespace (printf "%s-secrets" $fullName) | default (dict "data" (dict)) -}}
 {{- $dbSecret := lookup "v1" "Secret" $namespace (printf "%s-db-app" .Release.Name) | default (dict "data" (dict)) -}}
 {{- $masSharedSecret := lookup "v1" "Secret" $namespace "mas-synapse-shared-secret" | default (dict "data" (dict)) -}}
+{{- $smtpSecret := lookup "v1" "Secret" $namespace (printf "%s-sydent-smtp" .Release.Name) | default (dict "data" (dict)) -}}
 server_name: "{{ $serverName }}"
 # Deliberately not derived from server_name - server_name is the
 # federation/MXID identity (the apex domain, delegated to here via
@@ -243,6 +244,29 @@ matrix_authentication_service:
   {{- if index $masSharedSecret.data "shared-secret" }}
   secret: "{{ index $masSharedSecret.data "shared-secret" | b64dec }}"
   {{- end }}
+{{- end }}
+# account_threepid_delegates.email was removed in Synapse 1.66+ (a
+# present value is a hard config error at startup, confirmed from
+# Synapse's own docs) - email verification can no longer be delegated
+# to an identity server at the Synapse config level at all. Since
+# Element's "Add email" in Settings calls Synapse's own
+# /account/3pid/email/requestToken first (confirmed live - it never
+# reached Sydent), Synapse needs its own working SMTP config or that
+# flow silently never sends anything. Reuses the same credentials
+# already stored for Sydent (templates/sydent-smtp-secret.yaml) rather
+# than duplicating them - this is a shared secret (confirmed Synapse
+# and Sydent share a namespace here, no cross-namespace mirroring
+# needed). Sydent itself is still used separately, after this step,
+# to publish the verified binding for email/phone discovery.
+{{- if index $smtpSecret.data "host" }}
+email:
+  smtp_host: "{{ index $smtpSecret.data "host" | b64dec }}"
+  smtp_port: {{ index $smtpSecret.data "port" | b64dec }}
+  smtp_user: "{{ index $smtpSecret.data "username" | b64dec }}"
+  smtp_pass: "{{ index $smtpSecret.data "password" | b64dec }}"
+  require_transport_security: true
+  enable_tls: true
+  notif_from: "{{ index $smtpSecret.data "from" | b64dec }}"
 {{- end }}
 account_threepid_delegates: {}
 report_stats: {{ .Values.tenant.homeserver.values.reportStats }}
