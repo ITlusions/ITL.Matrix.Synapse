@@ -1,5 +1,5 @@
 apiVersion: v2
-appVersion: v1.0.0
+appVersion: v1.163.2
 description: A Helm chart for deploying and managing Synapse Matrix tenants
 home: https://matrix.org
 icon: https://matrix.org/images/matrix-logo.svg

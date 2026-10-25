@@ -284,7 +284,13 @@ postgresql:
 synapse:
   image:
     repository: "matrixdotorg/synapse"
-    tag: v1.35.1
+    # Was v1.35.1 - a multi-year-old pin. Bumped to the latest stable
+    # tag on Docker Hub (confirmed via the registry API, published
+    # 2026-10-23). Nothing runs on this chart yet (not deployed in
+    # any namespace), so this is a fresh-deploy version pin, not a
+    # live migration - no upgrade-path/schema-migration risk to
+    # manage here.
+    tag: v1.163.2
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
