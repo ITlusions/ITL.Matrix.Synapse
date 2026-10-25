@@ -1,0 +1,134 @@
+{{- if .Values.wellKnown.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-well-known
+  labels:
+    app.kubernetes.io/name: matrix-well-known
+data:
+  server: |
+    {"m.server": {{ .Values.wellKnown.federationTarget | quote }}}
+  client: |
+    {
+      "m.homeserver": {
+        "base_url": {{ .Values.wellKnown.clientBaseUrl | quote }}
+      },
+      "org.matrix.msc2965.authentication": {
+        "issuer": {{ .Values.wellKnown.masIssuer | quote }},
+        "account": {{ .Values.wellKnown.masAccount | quote }}
+      }
+    }
+  nginx.conf: |
+    server {
+      listen 80;
+      location = /.well-known/matrix/server {
+        default_type application/json;
+        add_header Access-Control-Allow-Origin *;
+        alias /well-known/server;
+      }
+      location = /.well-known/matrix/client {
+        default_type application/json;
+        add_header Access-Control-Allow-Origin *;
+        alias /well-known/client;
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-well-known
+  labels:
+    app.kubernetes.io/name: matrix-well-known
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: matrix-well-known
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: matrix-well-known
+      annotations:
+        config-hash: {{ .Values.wellKnown | toJson | sha256sum }}
+    spec:
+      containers:
+        - name: well-known
+          image: "nginx:1.27-alpine"
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: nginx.conf
+            - name: config
+              mountPath: /well-known/server
+              subPath: server
+            - name: config
+              mountPath: /well-known/client
+              subPath: client
+          readinessProbe:
+            httpGet:
+              path: /.well-known/matrix/server
+              port: http
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-well-known
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-well-known
+  labels:
+    app.kubernetes.io/name: matrix-well-known
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: matrix-well-known
+---
+# Exact-path, high-priority Ingress on the itlusions.com apex (owned by
+# the itl-website release) - intercepts ONLY the two .well-known/matrix
+# paths, confirmed via the landing-page precedent that Traefik needs the
+# explicit router.priority to reliably win an Exact rule over another
+# release's catch-all Prefix rule on the same host. Every other path on
+# itlusions.com (the actual website) is completely untouched.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-well-known
+  labels:
+    app.kubernetes.io/name: matrix-well-known
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
+    cert-manager.io/cluster-issuer: "letsencrypt-issuer"
+    traefik.ingress.kubernetes.io/router.priority: "100"
+spec:
+  ingressClassName: {{ .Values.tenant.ingress.className }}
+  tls:
+    - secretName: {{ .Values.wellKnown.tlsSecretName }}
+      hosts:
+        - {{ .Values.wellKnown.apexHost }}
+  rules:
+    - host: {{ .Values.wellKnown.apexHost | quote }}
+      http:
+        paths:
+          - path: /.well-known/matrix/server
+            pathType: Exact
+            backend:
+              service:
+                name: {{ .Release.Name }}-well-known
+                port:
+                  number: 80
+          - path: /.well-known/matrix/client
+            pathType: Exact
+            backend:
+              service:
+                name: {{ .Release.Name }}-well-known
+                port:
+                  number: 80
+{{- end }}

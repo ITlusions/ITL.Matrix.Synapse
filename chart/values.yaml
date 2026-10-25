@@ -25,7 +25,11 @@ matrix:
   # Hostname where Synapse can be reached.
   # This is *optional* if an Ingress is configured below. If hostname is unspecified, the Synapse hostname of the
   # Ingress will be used
-  # hostname: "matrix.example.com"
+  # Required once serverName (below, under tenant.homeserver.values) is the
+  # bare apex domain: server_name is the federation/MXID identity, this is
+  # where the Synapse pods actually listen - they must stay decoupled or
+  # public_baseurl ends up pointing clients at the website instead of Synapse.
+  hostname: "matrix.itlusions.com"
 
   # Set to false to disable presence (online/offline indicators)
   presence: true
@@ -741,7 +745,24 @@ tenant:
   homeserver:
     values:
       reportStats: false
-      serverName: matrix.itlusions.com
+      # Bare apex domain for clean MXIDs (@user:itlusions.com) via
+      # server-name delegation (MSC1708) - the actual Synapse pods keep
+      # running at matrix.hostname (matrix.itlusions.com) above, unchanged.
+      # Federating servers and clients find that real location by fetching
+      # https://itlusions.com/.well-known/matrix/{server,client} - see the
+      # wellKnown block and templates/well-known.yaml.
+      #
+      # Confirmed live (2026-10-25) that Synapse hard-refuses to boot if
+      # the database already has users under a different server_name
+      # ("Found users in database not native to <name>! You cannot change
+      # a synapse server_name after it's been configured" - a startup
+      # abort, not a warning). Since this is a dev deployment with no
+      # production data, the fix was dropping and recreating the synapse
+      # database fresh rather than migrating rows, so Synapse initializes
+      # as a brand-new instance under this server_name. Any account must
+      # be re-registered from scratch (old MXIDs under matrix.itlusions.com
+      # do not carry over - different identity).
+      serverName: itlusions.com
   ingress:
     enabled: true
     # NOT "traefik" - the actual IngressClass in this cluster is named
@@ -783,6 +804,23 @@ landingPage:
   enabled: true
   redirectTo: "https://comms.itlusions.com"
   redirectAfterSeconds: 5
+
+# Server-name delegation for the itlusions.com apex (owned by the
+# itl-website release, not this chart) - serves ONLY the two
+# .well-known/matrix/* files other servers and clients need to find the
+# real Synapse location, via an Exact-path, high-priority Ingress rule on
+# that same host. Confirmed live that Traefik needs the explicit priority
+# to keep this from being shadowed by (or shadowing) the website's own
+# catch-all rule, same fix as landingPage above. Content mirrors exactly
+# what Synapse already serves at matrix.itlusions.com/.well-known today.
+wellKnown:
+  enabled: true
+  apexHost: itlusions.com
+  tlsSecretName: itlusions-com-wellknown-tls
+  federationTarget: "matrix.itlusions.com:443"
+  clientBaseUrl: "https://matrix.itlusions.com/"
+  masIssuer: "https://mas.itlusions.com/"
+  masAccount: "https://mas.itlusions.com/account/"
 
 # Element Web - the actual chat UI, since integration_matrix (the
 # Nextcloud app) only sends files into Matrix rooms, it isn't a chat

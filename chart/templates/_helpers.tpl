@@ -169,7 +169,16 @@ Synapse hostname prepended with https:// to form a complete URL
 {{- $dbSecret := lookup "v1" "Secret" $namespace (printf "%s-db-app" .Release.Name) | default (dict "data" (dict)) -}}
 {{- $masSharedSecret := lookup "v1" "Secret" $namespace "mas-synapse-shared-secret" | default (dict "data" (dict)) -}}
 server_name: "{{ $serverName }}"
-public_baseurl: https://{{ $serverName }}
+# Deliberately not derived from server_name - server_name is the
+# federation/MXID identity (the apex domain, delegated to here via
+# .well-known), public_baseurl is where these pods actually listen.
+# Conflating them would have clients and media URLs pointed at the
+# website instead of Synapse the moment server_name left matrix.hostname.
+public_baseurl: {{ include "matrix.baseUrl" . }}
+# This chart serves its own apex-domain .well-known/matrix/server
+# (templates/well-known.yaml) now that server_name is delegated, so
+# Synapse's own copy at its real hostname is redundant - left on anyway
+# since it's harmless (nothing queries it there once delegation is live).
 serve_server_wellknown: true
 pid_file: /data/homeserver.pid
 presence:
