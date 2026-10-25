@@ -772,6 +772,18 @@ tenant:
           - path: /
             pathType: Prefix
 
+# Landing page for the bare homeserver root - Synapse's own default
+# root response is an immediate (0-second) redirect to its generic
+# /_matrix/static page, not configurable with a delay (confirmed -
+# Synapse's web_client_location setting only does an instant HTTP
+# redirect, no meta-refresh/delay option exists). This overrides just
+# the exact "/" path with a tiny static page instead, leaving every
+# other Synapse path (API, federation, etc) untouched.
+landingPage:
+  enabled: true
+  redirectTo: "https://comms.itlusions.com"
+  redirectAfterSeconds: 5
+
 # Element Web - the actual chat UI, since integration_matrix (the
 # Nextcloud app) only sends files into Matrix rooms, it isn't a chat
 # client. Static SPA, config.json mounted at /app/config.json

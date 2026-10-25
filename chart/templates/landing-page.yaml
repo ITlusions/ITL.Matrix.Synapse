@@ -1,0 +1,120 @@
+{{- if .Values.landingPage.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-landing-page
+  labels:
+    app.kubernetes.io/name: matrix-landing-page
+data:
+  index.html: |
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta http-equiv="refresh" content="{{ .Values.landingPage.redirectAfterSeconds }};url={{ .Values.landingPage.redirectTo }}">
+        <title>ITlusions Matrix</title>
+        <style>
+          body { font-family: sans-serif; background: #18191c; color: #fff; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+          a { color: #5c9eff; }
+        </style>
+      </head>
+      <body>
+        <p>Redirecting to <a href="{{ .Values.landingPage.redirectTo }}">{{ .Values.landingPage.redirectTo }}</a>&hellip;</p>
+      </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-landing-page
+  labels:
+    app.kubernetes.io/name: matrix-landing-page
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: matrix-landing-page
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: matrix-landing-page
+      annotations:
+        config-hash: {{ .Values.landingPage | toJson | sha256sum }}
+    spec:
+      containers:
+        - name: landing-page
+          image: "nginx:1.27-alpine"
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: page
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+      volumes:
+        - name: page
+          configMap:
+            name: {{ .Release.Name }}-landing-page
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-landing-page
+  labels:
+    app.kubernetes.io/name: matrix-landing-page
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: matrix-landing-page
+---
+# Exact-path "/" wins over the existing Prefix "/" rule routing
+# everything else to Synapse (standard Ingress semantics - the most
+# specific matching path takes precedence) - so the landing page only
+# intercepts the bare root, every /_matrix, /_synapse, /health etc
+# path is untouched.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-landing-page
+  labels:
+    app.kubernetes.io/name: matrix-landing-page
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
+    cert-manager.io/cluster-issuer: "letsencrypt-issuer"
+    # Traefik doesn't reliably prioritize Exact over Prefix across two
+    # separate Ingress objects for the same host/path by pathType
+    # alone - confirmed live, Synapse's own "/" response kept winning
+    # without this. Forcing explicit priority makes it deterministic.
+    traefik.ingress.kubernetes.io/router.priority: "100"
+spec:
+  ingressClassName: {{ .Values.tenant.ingress.className }}
+  tls:
+    {{- range .Values.tenant.ingress.tls }}
+    - secretName: {{ .secretName }}
+      hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+    {{- end }}
+  rules:
+    {{- range .Values.tenant.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Exact
+            backend:
+              service:
+                name: {{ $.Release.Name }}-landing-page
+                port:
+                  number: 80
+    {{- end }}
+{{- end }}
