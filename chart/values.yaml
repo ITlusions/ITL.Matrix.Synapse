@@ -896,12 +896,18 @@ identityServer:
   persistence:
     size: 1Gi
     storageClass: ""
+  # These stay blank here on purpose and are never committed filled in -
+  # templates/sydent-smtp-secret.yaml is the actual source of truth
+  # once deployed (a `lookup`-preserved Secret, see that file's
+  # comments). Set or rotate any of them with, e.g.:
+  #   helm upgrade matrix-synapse . -n matrix \
+  #     --set-string identityServer.smtp.password=<new password>
+  # then delete the live /data/sydent.conf on the pod and restart it -
+  # Sydent only reads this file at startup and the seed init container
+  # only writes it once (see sydent.yaml's own comments on why).
   smtp:
     host: ""
     port: 587
     username: ""
-    # Set via --set identityServer.smtp.password=... at deploy time,
-    # never committed - mirrored into a Secret the same way every other
-    # credential in this chart is handled.
     password: ""
     from: "Matrix Identity Server <identity@itlusions.com>"

@@ -1,4 +1,5 @@
 {{- if .Values.identityServer.enabled }}
+{{- $smtpSecret := lookup "v1" "Secret" .Release.Namespace (printf "%s-sydent-smtp" .Release.Name) | default (dict "data" (dict)) -}}
 # sydent.conf is kept as a Secret, not a ConfigMap, since it carries SMTP
 # credentials in plain INI text (Sydent's config parser has no env/secret
 # indirection support, confirmed from its source - these values are only
@@ -7,8 +8,15 @@
 # (it generates and persists its own ed25519 signing key back into it
 # on first start - confirmed from source, crypto.ed25519.signingkey
 # starts empty and is filled in and saved by Sydent, not by us), so a
-# values.yaml change to SMTP settings after first deploy needs the live
-# file edited or deleted directly, not just a redeploy.
+# templates/sydent-smtp-secret.yaml change after first deploy needs the
+# live file edited or deleted directly, not just a redeploy.
+#
+# SMTP values are read from the dedicated sydent-smtp-secret.yaml
+# Secret (the actual source of truth, update that one going forward),
+# not straight from .Values - on a fresh install, before that Secret
+# exists yet, this lookup is empty and the fields render blank, same
+# as the Helm `lookup` chicken-egg case already hit elsewhere in this
+# chart (MAS's own secrets) - a second `helm upgrade` picks it up.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -35,12 +43,12 @@ stringData:
     obey_x_forwarded_for = true
 
     [email]
-    email.smtphost = {{ .Values.identityServer.smtp.host }}
-    email.smtpport = {{ .Values.identityServer.smtp.port }}
-    email.smtpusername = {{ .Values.identityServer.smtp.username }}
-    email.smtppassword = {{ .Values.identityServer.smtp.password }}
+    email.smtphost = {{ if index $smtpSecret.data "host" }}{{ index $smtpSecret.data "host" | b64dec }}{{ end }}
+    email.smtpport = {{ if index $smtpSecret.data "port" }}{{ index $smtpSecret.data "port" | b64dec }}{{ end }}
+    email.smtpusername = {{ if index $smtpSecret.data "username" }}{{ index $smtpSecret.data "username" | b64dec }}{{ end }}
+    email.smtppassword = {{ if index $smtpSecret.data "password" }}{{ index $smtpSecret.data "password" | b64dec }}{{ end }}
     email.tlsmode = STARTTLS
-    email.from = {{ .Values.identityServer.smtp.from }}
+    email.from = {{ if index $smtpSecret.data "from" }}{{ index $smtpSecret.data "from" | b64dec }}{{ end }}
 
     [crypto]
     ed25519.signingkey =
