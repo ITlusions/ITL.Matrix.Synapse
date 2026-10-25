@@ -19,16 +19,37 @@ data:
       }
     }
   nginx.conf: |
+    # Client discovery libraries (confirmed with Element X) send an
+    # OPTIONS preflight before the GET, same as a browser would - plain
+    # nginx static serving 405s on OPTIONS by default, which some clients
+    # treat as a hard discovery failure instead of just skipping CORS.
+    # Mirrors the headers Synapse's own endpoints return for OPTIONS.
     server {
       listen 80;
       location = /.well-known/matrix/server {
         default_type application/json;
-        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Origin * always;
+        if ($request_method = OPTIONS) {
+          add_header Access-Control-Allow-Origin * always;
+          add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+          add_header Access-Control-Allow-Headers "X-Requested-With, Content-Type, Authorization, Date" always;
+          add_header Content-Length 0;
+          add_header Content-Type text/plain;
+          return 204;
+        }
         alias /well-known/server;
       }
       location = /.well-known/matrix/client {
         default_type application/json;
-        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Origin * always;
+        if ($request_method = OPTIONS) {
+          add_header Access-Control-Allow-Origin * always;
+          add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+          add_header Access-Control-Allow-Headers "X-Requested-With, Content-Type, Authorization, Date" always;
+          add_header Content-Length 0;
+          add_header Content-Type text/plain;
+          return 204;
+        }
         alias /well-known/client;
       }
     }
@@ -49,6 +70,12 @@ spec:
       labels:
         app.kubernetes.io/name: matrix-well-known
       annotations:
+        # Bump wellKnown.nginxConfigRevision (values.yaml) whenever
+        # nginx.conf above changes - confirmed live that hashing only
+        # .Values here silently misses template-only edits, since Helm's
+        # .Files object can't read files under templates/ to hash them
+        # directly. Without this, a changed ConfigMap doesn't roll the
+        # pod, and it keeps serving the stale nginx.conf.
         config-hash: {{ .Values.wellKnown | toJson | sha256sum }}
     spec:
       containers:

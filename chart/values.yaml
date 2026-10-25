@@ -821,6 +821,9 @@ wellKnown:
   clientBaseUrl: "https://matrix.itlusions.com/"
   masIssuer: "https://mas.itlusions.com/"
   masAccount: "https://mas.itlusions.com/account/"
+  # Bump this any time templates/well-known.yaml's nginx.conf changes -
+  # see the config-hash comment there for why.
+  nginxConfigRevision: 2
 
 # Element Web - the actual chat UI, since integration_matrix (the
 # Nextcloud app) only sends files into Matrix rooms, it isn't a chat
