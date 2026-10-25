@@ -256,38 +256,26 @@ ingress:
     nginx.ingress.kubernetes.io/configuration-snippet: |
       proxy_intercept_errors off;
 
-# PostgreSQL Database Configuration
+# In-cluster CNPG Postgres cluster (templates/cnpg-cluster.yaml), same
+# pattern as ITL.Forgejo/ITL.Nextcloud - requires the CNPG operator
+# already installed cluster-wide (itl.cnpg/operator). Replaces a
+# previous block that referenced a "stable/postgresql" chart
+# dependency and "templates/postgresql/initdb-configmap.yaml" -
+# neither ever actually existed in this repo (confirmed - no
+# dependencies in Chart.yaml, no postgresql/ template directory), and
+# the hardcoded postgresqlPassword: ChangeMe! / username+password:
+# matrix/matrix were never real credentials, just unused placeholder
+# values sitting in the repo. CNPG auto-creates the app user/database
+# and a Secret named "<release>-db-app" (keys: username, password,
+# dbname, host, port, uri, jdbc-uri) - no manual secret to create.
 postgresql:
-  # Whether to deploy the stable/postgresql chart with this chart. If disabled, make sure PostgreSQL is available at the hostname below and credentials are configured below
   enabled: true
-
-  postgresqlPassword: ChangeMe!
-
-  username: matrix
-  password: matrix
-  database: matrix
-
-  # Set this if postgresql.enabled = false
-  hostname: ""
-  port: 5432
-
-  # Whether to connect to the database over SSL
-  ssl: false
-  # See https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-PARAMKEYWORDS for documentation of these modes
-  sslMode: prefer
-
-  # Storage to allocate for stable/postgresql
-  persistence:
+  instances: 2
+  database: synapse
+  owner: synapse
+  storage:
     size: 8Gi
-
-  # If postgresql.enabled, stable/postgresql will run the scripts in templates/postgresql/initdb-configmap.yaml
-  # If using an external Postgres server, make sure to configure the database as specified at https://github.com/matrix-org/synapse/blob/master/docs/postgres.md
-  initdbScriptsConfigMap: "{{ .Release.Name }}-postgresql-initdb"
-
-  securityContext:
-    enabled: true
-    runAsUser: 1000
-    fsGroup: 1000
+    storageClass: "ha-dbs-lh"
 
 # Synapse Kubernetes resource settings
 synapse:
@@ -437,8 +425,14 @@ coturn:
   allowGuests: true
 
   # Shared secret for communication between Synapse and Coturn.
-  # Optional, will be auto-generated if not overridden here.
-  sharedSecret: "ChangeMe"
+  # NOT actually wired up yet - confirmed sharedSecret isn't
+  # referenced by any active template, only the .disabled ones
+  # (templates/matrix-secret02.yaml.disabled,
+  # templates/_homeserver.yaml.disabled) - Coturn/TURN support
+  # (voice/video calls) is a separate, not-yet-built piece of this
+  # chart. Left empty rather than the misleading "ChangeMe" that used
+  # to sit here with no code ever reading it.
+  sharedSecret: ""
 
   # UDP port range for TURN connections
   ports:
@@ -717,44 +711,66 @@ networkPolicies:
 isOpenshift: true
 
 # OIDC Configuration for Keycloak integration
+# OIDC login via the shared Keycloak (itl-keycloak), same instance
+# ITL.Forgejo/ITL.Nextcloud/Headscale/the website use.
+# templates/keycloakoidcclient.yaml creates the client,
+# templates/oidc-secret.yaml generates its secret once (stable across
+# upgrades via lookup, same idiom as ITL.Forgejo/ITL.Nextcloud) and
+# mirrors it into both namespaces that need it. No manual clientSecret
+# field anymore - it was never auto-generated before (confirmed - the
+# old synapse-secrets.yaml only set client_secret if this field was
+# already a non-empty string, with no generation path at all).
 oidc:
-  # Enable OIDC authentication with Keycloak
-  enabled: false
-  
-  # Client secret for the matrix-synapse client in Keycloak
-  # Leave empty ("") for public clients that don't require a secret
-  # Set to the actual client secret for confidential clients
-  # The secret will be stored in a Kubernetes Secret for security
-  clientSecret: ""
+  enabled: true
+  clientId: matrix-synapse
+  keycloakCRName: itl-keycloak
+  keycloakNamespace: itl-keycloak
+  realm: itlusions
+  issuer: "https://sts.itlusions.com/realms/itlusions"
+  displayName: "Matrix Synapse"
+  # /_synapse/client/oidc/callback is Synapse's fixed OIDC callback
+  # path - not configurable, confirmed from its own docs.
+  redirectUris:
+    - "https://matrix.itlusions.com/_synapse/client/oidc/callback"
+    - "https://matrix.itlusions.nl/_synapse/client/oidc/callback"
+  webOrigins:
+    - "https://matrix.itlusions.com"
+    - "https://matrix.itlusions.nl"
 
 tenant:
   name: itl-syn01
-  registrationSharedSecret:
-    name: itl-syn01-secret
-    existingSecret: false
   servicename: itl-syn01-matrix
   createNewPostgreSQL: false
   homeserver:
     values:
       reportStats: false
-      serverName: matrix.dev.itlusions.com
+      serverName: matrix.itlusions.com
   ingress:
     enabled: true
-    className: "traefik" # Updated to match the template's .Values.ingress.className
+    # NOT "traefik" - the actual IngressClass in this cluster is named
+    # itl-traefik (confirmed via `kubectl get ingressclass`; every
+    # other working ingress - Forgejo, Nextcloud, Headscale - uses it
+    # too). A plain "traefik" matches no IngressClass, so Traefik
+    # never claims the Ingress and falls back to serving its
+    # self-signed default cert - the exact SSL bug this already
+    # caused twice elsewhere in this session.
+    className: "itl-traefik"
     annotations:
       traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
       cert-manager.io/cluster-issuer: "letsencrypt-issuer"
     tls:
       - secretName: matrix-itlusions-com-tls
         hosts:
-          - matrix.dev.itlusions.com
           - matrix.itlusions.com
+      - secretName: matrix-itlusions-nl-tls
+        hosts:
+          - matrix.itlusions.nl
     hosts:
-      - host: matrix.dev.itlusions.com
+      - host: matrix.itlusions.com
         paths:
           - path: /
             pathType: Prefix
-      - host: matrix.itlusions.com
+      - host: matrix.itlusions.nl
         paths:
           - path: /
             pathType: Prefix

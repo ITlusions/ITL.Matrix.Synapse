@@ -1,0 +1,24 @@
+{{- if .Values.postgresql.enabled }}
+# Same pattern as ITL.Forgejo/ITL.Nextcloud's templates/cnpg-cluster.yaml
+# - requires the CNPG operator already installed cluster-wide
+# (itl.cnpg/operator). In-cluster only, no ingress/IngressRouteTCP -
+# reachable only via the ClusterIP service CNPG generates
+# (<release>-db-rw).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Release.Name }}-db
+spec:
+  instances: {{ .Values.postgresql.instances }}
+
+  bootstrap:
+    initdb:
+      database: {{ .Values.postgresql.database }}
+      owner: {{ .Values.postgresql.owner }}
+
+  storage:
+    size: {{ .Values.postgresql.storage.size }}
+    {{- if .Values.postgresql.storage.storageClass }}
+    storageClass: {{ .Values.postgresql.storage.storageClass }}
+    {{- end }}
+{{- end }}

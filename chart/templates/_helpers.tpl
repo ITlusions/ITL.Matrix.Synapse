@@ -161,23 +161,15 @@ Synapse hostname prepended with https:// to form a complete URL
 {{- end }}
 {{- end }}
 
-{{/*
-Helper function to get a postgres connection string for the database, with all of the auth and SSL settings automatically applied
-*/}}
-{{- define "matrix.postgresUri" -}}
-{{- if .Values.postgresql.enabled -}}
-postgres://{{ .Values.postgresql.username }}:{{ .Values.postgresql.password }}@{{ include "matrix.fullname" . }}-postgresql/%s{{ if .Values.postgresql.ssl }}?ssl=true&sslmode={{ .Values.postgresql.sslMode}}{{ end }}
-{{- else -}}
-postgres://{{ .Values.postgresql.username }}:{{ .Values.postgresql.password }}@{{ .Values.postgresql.hostname }}:{{ .Values.postgresql.port }}/%s{{ if .Values.postgresql.ssl }}?ssl=true&sslmode={{ .Values.postgresql.sslMode }}{{ end }}
-{{- end }}
-{{- end }}
-
 {{- define "itl.matrix.synapse.homeserver" -}}
 {{- $fullName := include "itl.matrix.synapse.name" . -}}
 {{- $namespace := .Release.Namespace -}}
+{{- $serverName := .Values.tenant.homeserver.values.serverName -}}
 {{- $synapseSecret := lookup "v1" "Secret" $namespace (printf "%s-secrets" $fullName) | default (dict "data" (dict)) -}}
-server_name: "matrix.dev.itlusions.com"
-public_baseurl: https://matrix.dev.itlusions.com 
+{{- $oidcSecret := lookup "v1" "Secret" $namespace "matrix-synapse-oidc-secret" | default (dict "data" (dict)) -}}
+{{- $dbSecret := lookup "v1" "Secret" $namespace (printf "%s-db-app" .Release.Name) | default (dict "data" (dict)) -}}
+server_name: "{{ $serverName }}"
+public_baseurl: https://{{ $serverName }}
 serve_server_wellknown: true
 pid_file: /data/homeserver.pid
 presence:
@@ -190,18 +182,32 @@ listeners:
     resources:
       - names: [client, federation]
         compress: false
+# In-cluster CNPG Postgres (templates/cnpg-cluster.yaml) - not
+# sqlite3, which was hardcoded here regardless of the postgresql.*
+# values existing (confirmed - the old matrix.postgresUri helper that
+# built a connection string was defined but never actually called
+# anywhere). CNPG's own generated Secret (<release>-db-app) is looked
+# up directly rather than built from hand-maintained values, same
+# reasoning as removing the hardcoded postgresqlPassword/username/
+# password that used to live in values.yaml.
 database:
-  name: sqlite3
+  name: psycopg2
   args:
-    database: /data/homeserver.db
-log_config: "/data/matrix.dev.itlusions.com.log.config"
+    user: {{ if $dbSecret.data.username }}{{ $dbSecret.data.username | b64dec }}{{ else }}{{ .Values.postgresql.owner }}{{ end }}
+    password: {{ if $dbSecret.data.password }}{{ $dbSecret.data.password | b64dec }}{{ else }}""{{ end }}
+    database: {{ if $dbSecret.data.dbname }}{{ $dbSecret.data.dbname | b64dec }}{{ else }}{{ .Values.postgresql.database }}{{ end }}
+    host: {{ .Release.Name }}-db-rw
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+log_config: "/data/{{ $serverName }}.log.config"
 media_store_path: "/data/media_store"
 enable_registration: false
 registration_shared_secret: "{{ if $synapseSecret.data.registration_shared_secret }}{{ $synapseSecret.data.registration_shared_secret | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
 enable_registration_without_verification: true
 macaroon_secret_key: "{{ if $synapseSecret.data.macaroon_secret_key }}{{ $synapseSecret.data.macaroon_secret_key | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
 form_secret: "{{ if $synapseSecret.data.form_secret }}{{ $synapseSecret.data.form_secret | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
-signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
+signing_key_path: "/data/{{ $serverName }}.signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
 {{- if .Values.oidc.enabled }}
@@ -209,10 +215,10 @@ oidc_providers:
   - idp_id: itlusions-keycloak
     idp_name: "ITlusions (Keycloak)"
     discover: true
-    issuer: "https://sts.itlusions.com/realms/itlusions"
-    client_id: "matrix-synapse"
-    {{- if or .Values.oidc.clientSecret ($synapseSecret.data.client_secret) }}
-    client_secret: "{{ if $synapseSecret.data.client_secret }}{{ $synapseSecret.data.client_secret | b64dec }}{{ else }}{{ .Values.oidc.clientSecret }}{{ end }}"
+    issuer: {{ .Values.oidc.issuer | quote }}
+    client_id: {{ .Values.oidc.clientId | quote }}
+    {{- if index $oidcSecret.data "client-secret" }}
+    client_secret: "{{ index $oidcSecret.data "client-secret" | b64dec }}"
     {{- end }}
     scopes: ["openid", "profile", "email", "roles"]
     authorization_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/auth"
@@ -232,7 +238,7 @@ oidc_providers:
             value: "student|instructor|admin"
 {{- end }}
 account_threepid_delegates: {}
-report_stats: true
+report_stats: {{ .Values.tenant.homeserver.values.reportStats }}
 opentracing: {}
 stats: {}
 user_directory: {}
