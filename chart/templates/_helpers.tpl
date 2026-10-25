@@ -2,7 +2,7 @@
 Expand the name of the chart.
 */}}
 {{- define "itl.matrix.synapse.name" -}}
-{{- default .Chart.Name .Values.tenant.name | trunc 63 | trimSuffix "-" }}
+{{- default .Release.Name .Values.tenant.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -170,4 +170,73 @@ postgres://{{ .Values.postgresql.username }}:{{ .Values.postgresql.password }}@{
 {{- else -}}
 postgres://{{ .Values.postgresql.username }}:{{ .Values.postgresql.password }}@{{ .Values.postgresql.hostname }}:{{ .Values.postgresql.port }}/%s{{ if .Values.postgresql.ssl }}?ssl=true&sslmode={{ .Values.postgresql.sslMode }}{{ end }}
 {{- end }}
+{{- end }}
+
+{{- define "itl.matrix.synapse.homeserver" -}}
+{{- $fullName := include "itl.matrix.synapse.name" . -}}
+{{- $namespace := .Release.Namespace -}}
+{{- $synapseSecret := lookup "v1" "Secret" $namespace (printf "%s-secrets" $fullName) | default (dict "data" (dict)) -}}
+server_name: "matrix.dev.itlusions.com"
+public_baseurl: https://matrix.dev.itlusions.com 
+serve_server_wellknown: true
+pid_file: /data/homeserver.pid
+presence:
+  presence_router: {}
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+database:
+  name: sqlite3
+  args:
+    database: /data/homeserver.db
+log_config: "/data/matrix.dev.itlusions.com.log.config"
+media_store_path: "/data/media_store"
+enable_registration: false
+registration_shared_secret: "{{ if $synapseSecret.data.registration_shared_secret }}{{ $synapseSecret.data.registration_shared_secret | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
+enable_registration_without_verification: true
+macaroon_secret_key: "{{ if $synapseSecret.data.macaroon_secret_key }}{{ $synapseSecret.data.macaroon_secret_key | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
+form_secret: "{{ if $synapseSecret.data.form_secret }}{{ $synapseSecret.data.form_secret | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
+signing_key_path: "/data/matrix.dev.itlusions.com.signing.key"
+trusted_key_servers:
+  - server_name: "matrix.org"
+{{- if .Values.oidc.enabled }}
+oidc_providers:
+  - idp_id: itlusions-keycloak
+    idp_name: "ITlusions (Keycloak)"
+    discover: true
+    issuer: "https://sts.itlusions.com/realms/itlusions"
+    client_id: "matrix-synapse"
+    {{- if or .Values.oidc.clientSecret ($synapseSecret.data.client_secret) }}
+    client_secret: "{{ if $synapseSecret.data.client_secret }}{{ $synapseSecret.data.client_secret | b64dec }}{{ else }}{{ .Values.oidc.clientSecret }}{{ end }}"
+    {{- end }}
+    scopes: ["openid", "profile", "email", "roles"]
+    authorization_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/auth"
+    token_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/token"
+    userinfo_endpoint: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/userinfo"
+    jwks_uri: "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/certs"
+    skip_verification: false
+    backchannel_logout_enabled: true
+    allow_existing_users: true
+    user_mapping_provider:
+      config:
+        localpart_template: "{{`{{ user.preferred_username | lower | replace('-', '_') | replace('.', '_') }}`}}"
+        display_name_template: "{{`{{ user.name or user.preferred_username or user.email }}`}}"
+        email_template: "{{`{{ user.email }}`}}"
+        attribute_requirements:
+          - attribute: "roles"
+            value: "student|instructor|admin"
+{{- end }}
+account_threepid_delegates: {}
+report_stats: true
+opentracing: {}
+stats: {}
+user_directory: {}
+redis: {}
+push: {}
+spam_checker: {}
 {{- end }}

@@ -1,10 +1,9 @@
 apiVersion: synapse.opdev.io/v1alpha1
 kind: Synapse
 metadata:
-  name: itl-syn01-tenant
+  name: itl-syn01
 spec:
   homeserver:
     configMap:
       name: itl-syn01-cm
       namespace: {{ .Release.Namespace }}
-MacaroonSecretKey: "change-me-{{ randAlphaNum 32 }}"
