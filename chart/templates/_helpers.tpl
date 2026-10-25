@@ -205,6 +205,13 @@ media_store_path: "/data/media_store"
 enable_registration: false
 registration_shared_secret: "{{ if $synapseSecret.data.registration_shared_secret }}{{ $synapseSecret.data.registration_shared_secret | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
 enable_registration_without_verification: true
+# SSO-only - same hardening decision as ITL.Forgejo/ITL.Nextcloud.
+# enable_registration: false above only blocks creating NEW password
+# accounts; m.login.password still showed up as a usable login flow
+# for any account that did have a password, confirmed live. This
+# disables password auth entirely, leaving SSO as the only way in.
+password_config:
+  enabled: false
 macaroon_secret_key: "{{ if $synapseSecret.data.macaroon_secret_key }}{{ $synapseSecret.data.macaroon_secret_key | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
 form_secret: "{{ if $synapseSecret.data.form_secret }}{{ $synapseSecret.data.form_secret | b64dec }}{{ else }}{{ randAlphaNum 64 }}{{ end }}"
 signing_key_path: "/data/{{ $serverName }}.signing.key"
