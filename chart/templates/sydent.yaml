@@ -1,0 +1,186 @@
+{{- if .Values.identityServer.enabled }}
+# sydent.conf is kept as a Secret, not a ConfigMap, since it carries SMTP
+# credentials in plain INI text (Sydent's config parser has no env/secret
+# indirection support, confirmed from its source - these values are only
+# ever read directly out of the file). Seeded onto the data PVC once by
+# the init container below; after that Sydent itself owns the file
+# (it generates and persists its own ed25519 signing key back into it
+# on first start - confirmed from source, crypto.ed25519.signingkey
+# starts empty and is filled in and saved by Sydent, not by us), so a
+# values.yaml change to SMTP settings after first deploy needs the live
+# file edited or deleted directly, not just a redeploy.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Release.Name }}-sydent-config-template
+  labels:
+    app.kubernetes.io/name: matrix-identity-server
+type: Opaque
+stringData:
+  sydent.conf: |
+    [general]
+    server.name = {{ .Values.identityServer.ingress.host }}
+    log.level = INFO
+    log.path =
+    templates.path = /home/sydent/src/res
+    brand.default = matrix-org
+    pidfile.path = /data/sydent.pid
+
+    [db]
+    db.file = /data/sydent.db
+
+    [http]
+    clientapi.http.bind_address = 0.0.0.0
+    clientapi.http.port = 8090
+    obey_x_forwarded_for = true
+
+    [email]
+    email.smtphost = {{ .Values.identityServer.smtp.host }}
+    email.smtpport = {{ .Values.identityServer.smtp.port }}
+    email.smtpusername = {{ .Values.identityServer.smtp.username }}
+    email.smtppassword = {{ .Values.identityServer.smtp.password }}
+    email.tlsmode = STARTTLS
+    email.from = {{ .Values.identityServer.smtp.from }}
+
+    [crypto]
+    ed25519.signingkey =
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-sydent-data
+  labels:
+    app.kubernetes.io/name: matrix-identity-server
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.identityServer.persistence.storageClass }}
+  storageClassName: {{ .Values.identityServer.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.identityServer.persistence.size }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-sydent
+  labels:
+    app.kubernetes.io/name: matrix-identity-server
+spec:
+  replicas: 1
+  strategy:
+    # Recreate, not RollingUpdate - a second pod can't share the single
+    # ReadWriteOnce sqlite-backed PVC, confirmed pattern risk from the
+    # same class of issue seen elsewhere in this chart with exclusive
+    # volume attachment (the server_name migration's FailedAttachVolume
+    # wait). Sydent is a single-replica service by design anyway.
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: matrix-identity-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: matrix-identity-server
+      annotations:
+        config-hash: {{ .Values.identityServer | toJson | sha256sum }}
+    spec:
+      # Image runs as a fixed non-root "sydent" user, uid/gid 993
+      # (confirmed from the Dockerfile) - the PVC mounts root-owned by
+      # default, which 404'd the init container's write with Permission
+      # denied until this was added.
+      securityContext:
+        fsGroup: 993
+        runAsUser: 993
+        runAsGroup: 993
+      initContainers:
+        # Seeds sydent.conf onto the PVC only if it doesn't already
+        # exist, so Sydent's own generated signing key (written back
+        # into this same file on first start) survives every later
+        # restart instead of being overwritten by the Secret's blank
+        # one each time.
+        - name: seed-config
+          image: "{{ .Values.identityServer.image.repository }}:{{ .Values.identityServer.image.tag }}"
+          imagePullPolicy: {{ .Values.identityServer.image.pullPolicy }}
+          command: ["sh", "-c", "test -f /data/sydent.conf || cp /template/sydent.conf /data/sydent.conf"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config-template
+              mountPath: /template/sydent.conf
+              subPath: sydent.conf
+              readOnly: true
+      containers:
+        - name: sydent
+          image: "{{ .Values.identityServer.image.repository }}:{{ .Values.identityServer.image.tag }}"
+          imagePullPolicy: {{ .Values.identityServer.image.pullPolicy }}
+          env:
+            - name: SYDENT_CONF
+              value: /data/sydent.conf
+          ports:
+            - name: http
+              containerPort: 8090
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-sydent-data
+        - name: config-template
+          secret:
+            secretName: {{ .Release.Name }}-sydent-config-template
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-sydent
+  labels:
+    app.kubernetes.io/name: matrix-identity-server
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: matrix-identity-server
+---
+{{- if .Values.identityServer.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-sydent
+  labels:
+    app.kubernetes.io/name: matrix-identity-server
+  annotations:
+    {{- toYaml .Values.identityServer.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.identityServer.ingress.className }}
+  tls:
+    - secretName: {{ .Values.identityServer.ingress.tlsSecretName }}
+      hosts:
+        - {{ .Values.identityServer.ingress.host }}
+  rules:
+    - host: {{ .Values.identityServer.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-sydent
+                port:
+                  number: 80
+{{- end }}
+{{- end }}

@@ -859,3 +859,49 @@ elementWeb:
   # still works everywhere either way, just opens as a normal web page
   # on mobile instead of deep-linking into the app.
   permalinkPrefix: "https://comms.itlusions.com"
+
+# Matrix identity server (Sydent) - a separate service from Synapse/MAS,
+# purpose-built to map real-world 3PIDs (email, phone) to Matrix user IDs
+# so people can be found/invited by email instead of a raw MXID. Keycloak
+# cannot do this - it's a Matrix-specific lookup protocol
+# (/_matrix/identity/...), not generic OIDC/SAML identity. Advertised via
+# templates/well-known.yaml's m.identity_server entry, same delegation
+# pattern as the homeserver/auth metadata.
+#
+# SQLite, not CNPG: Sydent's write volume (3PID bind/lookup/invite
+# records) is tiny compared to Synapse's own data, and SQLite is Sydent's
+# own documented default for exactly this scale - a dedicated HA Postgres
+# cluster would be pure overhead here.
+#
+# Email verification genuinely needs a real SMTP relay - smtp.host is
+# deliberately left blank; Sydent still deploys without it, but 3PID
+# binding will fail at the "send validation token" step until it's set.
+identityServer:
+  enabled: true
+  image:
+    repository: matrixdotorg/sydent
+    # Confirmed against Docker Hub's registry API - real tags are
+    # v-prefixed (my first guess, "2.6.3", doesn't exist and 404'd on
+    # pull - caught live). Latest available: v2.7.0.
+    tag: "v2.7.0"
+    pullPolicy: IfNotPresent
+  ingress:
+    enabled: true
+    className: "itl-traefik"
+    host: is.itlusions.com
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
+      cert-manager.io/cluster-issuer: "letsencrypt-issuer"
+    tlsSecretName: is-itlusions-com-tls
+  persistence:
+    size: 1Gi
+    storageClass: ""
+  smtp:
+    host: ""
+    port: 587
+    username: ""
+    # Set via --set identityServer.smtp.password=... at deploy time,
+    # never committed - mirrored into a Secret the same way every other
+    # credential in this chart is handled.
+    password: ""
+    from: "Matrix Identity Server <identity@itlusions.com>"

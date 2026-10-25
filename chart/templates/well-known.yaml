@@ -17,6 +17,11 @@ data:
         "issuer": {{ .Values.wellKnown.masIssuer | quote }},
         "account": {{ .Values.wellKnown.masAccount | quote }}
       }
+      {{- if .Values.identityServer.enabled }},
+      "m.identity_server": {
+        "base_url": "https://{{ .Values.identityServer.ingress.host }}"
+      }
+      {{- end }}
     }
   nginx.conf: |
     # Client discovery libraries (confirmed with Element X) send an
@@ -76,7 +81,7 @@ spec:
         # .Files object can't read files under templates/ to hash them
         # directly. Without this, a changed ConfigMap doesn't roll the
         # pod, and it keeps serving the stale nginx.conf.
-        config-hash: {{ .Values.wellKnown | toJson | sha256sum }}
+        config-hash: {{ dict "wellKnown" .Values.wellKnown "identityServer" .Values.identityServer | toJson | sha256sum }}
     spec:
       containers:
         - name: well-known
